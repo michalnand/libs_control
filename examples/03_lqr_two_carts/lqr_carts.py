@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
 
     #required state
-    xr = numpy.array([[0.0, 1.0, 0.0, 0.0]]).T
+    xr = numpy.array([[0.0, 5.0, 0.0, 0.0]]).T
 
     #step response
     u_result, x_result = lqr.closed_loop_response(xr, steps)
