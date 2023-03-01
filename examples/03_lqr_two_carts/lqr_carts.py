@@ -30,10 +30,10 @@ if __name__ == "__main__":
     mat_b[2][0] = 1.0/m1
 
 
+    f_sampling  = 32.0
+    dt          = 1.0/(10.0*f_sampling)
 
-    dt = 0.001
-
-    steps = 10000
+    steps = 1200
 
     t_result = numpy.arange(steps)*dt
 
@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
 
     #plot system open loop step response
-    u_result, x_result = ds.step_response(amplitudes = 1, steps=10000)
+    u_result, x_result = ds.step_response(amplitudes = 1, steps=steps)
     LibsControl.plot_open_loop_response(t_result, x_result, "results/open_loop_response", labels=["x0 [m]", "x1 [m]", "v0 [m/s]", "v1 [m/s]"])
 
 
@@ -67,10 +67,10 @@ if __name__ == "__main__":
 
 
     #required state
-    xr = numpy.array([[0.0, 5.0, 0.0, 0.0]]).T
+    xr = numpy.array([[0.0, 1.0, 0.0, 0.0]]).T
 
     #step response
-    u_result, x_result = lqr.closed_loop_response(xr, steps)
+    u_result, x_result = lqr.closed_loop_response(xr, steps, 10)
 
     LibsControl.plot_closed_loop_response(t_result, u_result, x_result, "results/closed_loop_response.png", ["force [N]"], ["x0 [m]", "x1 [m]", "v0 [m/s]", "v1 [m/s]"] )
     
