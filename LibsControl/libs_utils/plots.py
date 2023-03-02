@@ -49,7 +49,7 @@ def plot_open_loop_response(t_result, x_result, file_name, labels = None):
     plt.tight_layout()
     plt.savefig(file_name, dpi = 300)
 
-def plot_closed_loop_response(t_result, u_result, x_result, file_name, u_labels = None, x_labels = None):
+def plot_closed_loop_response(t_result, u_result, x_result, x_hat = None, file_name = "output.png", u_labels = None, x_labels = None):
     plt.clf()
 
     count = len(u_result[0]) + len(x_result[0])
@@ -78,7 +78,12 @@ def plot_closed_loop_response(t_result, u_result, x_result, file_name, u_labels 
         else:
             lbl = "x[" + str(i) + "]"
 
+        if x_hat is not None:
+            axs[idx].plot(t_result, x_hat[:, i], label=lbl, color="deepskyblue")
+
+   
         axs[idx].plot(t_result, x_result[:, i], label=lbl, color="purple")
+        
         axs[idx].set_xlabel("time [s]")
         axs[idx].set_ylabel(lbl)
         axs[idx].grid()

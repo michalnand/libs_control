@@ -79,7 +79,7 @@ if __name__ == "__main__":
     xr = numpy.array([[0.0, 1.0, 0.0, 0.0]]).T
 
     #step response
-    u_result, x_result, y_result = lqg.closed_loop_response(xr, steps, observation_noise = 0.1, disturbance = True)
+    u_result, x_result, x_hat_result, y_result = lqg.closed_loop_response(xr, steps, observation_noise = 0.1, disturbance = True)
 
-    LibsControl.plot_closed_loop_response(t_result, u_result, x_result, "results/closed_loop_response.png", ["force [N]"], ["x0 [m]", "x1 [m]", "v0 [m/s]", "v1 [m/s]"] )
+    LibsControl.plot_closed_loop_response(t_result, u_result, x_result, x_hat_result, "results/closed_loop_response.png", ["force [N]"], ["x0 [m]", "x1 [m]", "v0 [m/s]", "v1 [m/s]"] )
     

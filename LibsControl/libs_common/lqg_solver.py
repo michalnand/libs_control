@@ -26,9 +26,9 @@ class LQGSolver:
         return self.k, self.g, self.f
     
     def closed_loop_response(self, xr, steps = 500, observation_noise = 0.0, disturbance = False):
-        u_result, x_result, y_result = self._closed_loop_response(self.a, self.b, self.c, xr, self.k, self.g, self.f, steps, observation_noise, disturbance)
+        u_result, x_result, x_hat_result, y_result = self._closed_loop_response(self.a, self.b, self.c, xr, self.k, self.g, self.f, steps, observation_noise, disturbance)
 
-        return u_result, x_result, y_result
+        return u_result, x_result, x_hat_result, y_result
      
     def get_poles(self):
         
@@ -91,16 +91,18 @@ class LQGSolver:
     def _closed_loop_response(self, a, b, c, xr, k, g, f, steps = 500, observation_noise = 0.0, disturbance = False):
 
         x       = numpy.zeros((a.shape[0], 1))
+        
         x_hat   = numpy.zeros((a.shape[0], 1))
         y_hat   = numpy.zeros((c.shape[0], 1))
         y       = numpy.zeros((c.shape[0], 1))
 
         u       = numpy.zeros((b.shape[1], 1))
 
-        u_result = numpy.zeros((steps, b.shape[1]))
-        x_result = numpy.zeros((steps, a.shape[0]))
-        y_result = numpy.zeros((steps, c.shape[0]))
-
+        u_result        = numpy.zeros((steps, b.shape[1]))
+        x_result        = numpy.zeros((steps, a.shape[0]))
+        x_hat_result    = numpy.zeros((steps, a.shape[0]))
+        y_result        = numpy.zeros((steps, c.shape[0]))
+        
         
         for n in range(steps):
 
@@ -118,8 +120,6 @@ class LQGSolver:
             
             #system dynamics step
             x       = x + (a@x + b@u)*self.dt
-
-
             y       = c@x
             
             #disturbance for testing
@@ -127,9 +127,10 @@ class LQGSolver:
                 x[:, 0]+= 1
                         
             
-            u_result[n] = u[:, 0]
-            x_result[n] = x[:, 0]
-            y_result[n] = y[:, 0]
+            u_result[n]     = u[:, 0]
+            x_result[n]     = x[:, 0]
+            x_hat_result[n] = x_hat[:, 0]
+            y_result[n]     = y[:, 0]
 
-        return u_result, x_result, y_result
+        return u_result, x_result, x_hat_result, y_result
             
