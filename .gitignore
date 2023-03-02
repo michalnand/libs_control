@@ -23,6 +23,8 @@ share/python-wheels/
 MANIFEST
 
 
+.ipynb_checkpoints/
+
 #filesystem
 .DS_Store
 
