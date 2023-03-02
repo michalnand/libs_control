@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     dt          = 1.0/256.0
 
-    steps = 1200
+    steps = 1500
 
     t_result = numpy.arange(steps)*dt
 

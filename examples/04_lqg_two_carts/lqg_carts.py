@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     dt          = 1.0/256
 
-    steps = 1200
+    steps = 1500
 
     t_result = numpy.arange(steps)*dt
 
@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     #plot system open loop step response
     u_result, x_result, y_result = ds.step_response(amplitudes = 1, steps=steps)
-    LibsControl.plot_open_loop_response(t_result, y_result, "results/open_loop_response") #, labels=["x0 [m]", "x1 [m]"])
+    LibsControl.plot_open_loop_response(t_result, x_result, "results/open_loop_response", ["x0 [m]", "x1 [m]", "v0 [m/s]", "v1 [m/s]"])
 
 
  
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     xr = numpy.array([[0.0, 1.0, 0.0, 0.0]]).T
 
     #step response
-    u_result, x_result, y_result = lqg.closed_loop_response(xr, steps)
+    u_result, x_result, y_result = lqg.closed_loop_response(xr, steps, observation_noise = 0.0, disturbance = True)
 
-    LibsControl.plot_closed_loop_response(t_result, u_result, y_result, "results/closed_loop_response.png", ["force [N]"], ["x0 [m]", "x1 [m]", "v0 [m/s]", "v1 [m/s]"] )
+    LibsControl.plot_closed_loop_response(t_result, u_result, x_result, "results/closed_loop_response.png", ["force [N]"], ["x0 [m]", "x1 [m]", "v0 [m/s]", "v1 [m/s]"] )
     

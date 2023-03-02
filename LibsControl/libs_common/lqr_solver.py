@@ -19,7 +19,7 @@ class LQRSolver:
         
     def solve(self):
         self.k = self._find_k(self.a, self.b, self.q, self.r)
-        self.g = self._find_g(self.a, self.b, self.c, self.k)
+        self.g = self._find_g(self.a, self.b, self.k)
 
         return self.k, self.g
     
@@ -66,10 +66,10 @@ class LQRSolver:
     '''
     find scaling for reference value using steaduy state response
     '''
-    def _find_g(self, a, b, c, k):
+    def _find_g(self, a, b, k):
         x_steady_state = -numpy.linalg.pinv(a-b@k)@b@k
-        y_steady_state = c@x_steady_state
-        g = 1.0/numpy.diagonal(y_steady_state)
+        #y_steady_state = c@x_steady_state
+        g = 1.0/numpy.diagonal(x_steady_state)
         g = numpy.expand_dims(g, 1)
 
         return g
@@ -87,17 +87,19 @@ class LQRSolver:
             g = numpy.ones_like(xr)
 
         for n in range(steps):
+            x_obs       = x + 0.1*numpy.random.randn(x.shape[0], x.shape[1])
+
             #compute error, include gain scaling matrix
-            error = xr*g - x
+            error = xr*g - x_obs
 
             #apply controll law
             u = k@error
 
-           
-            
+        
             #system dynamics step
             x     = x + (a@x + b@u)*self.dt
 
+            
             if n == steps//2:
                 x[1, 0]+= 1
 

@@ -13,11 +13,11 @@ class LQGSolver:
         self.q = q
         self.r = r
         self.dt= dt
-
+ 
         
     def solve(self):
         self.k = self._find_k(self.a, self.b, self.q, self.r)
-        self.g = self._find_g(self.a, self.b, self.c, self.k)
+        self.g = self._find_g(self.a, self.b, self.k)
 
         self.f = self._find_f(self.a, self.c, self.q)
 
@@ -25,8 +25,8 @@ class LQGSolver:
 
         return self.k, self.g, self.f
     
-    def closed_loop_response(self, xr, steps = 500):
-        u_result, x_result, y_result = self._closed_loop_response(self.a, self.b, self.c, xr, self.k, self.g, self.f, steps)
+    def closed_loop_response(self, xr, steps = 500, observation_noise = 0.0, disturbance = False):
+        u_result, x_result, y_result = self._closed_loop_response(self.a, self.b, self.c, xr, self.k, self.g, self.f, steps, observation_noise, disturbance)
 
         return u_result, x_result, y_result
      
@@ -68,10 +68,10 @@ class LQGSolver:
     '''
     find scaling for reference value using steaduy state response
     '''
-    def _find_g(self, a, b, c, k):
+    def _find_g(self, a, b, k):
         x_steady_state = -numpy.linalg.pinv(a-b@k)@b@k
-        y_steady_state = c@x_steady_state
-        g = 1.0/numpy.diagonal(y_steady_state)
+        #y_steady_state = x_steady_state
+        g = 1.0/numpy.diagonal(x_steady_state)
         g = numpy.expand_dims(g, 1)
 
         return g
@@ -79,7 +79,7 @@ class LQGSolver:
 
     def _find_f(self, a, c, q):
 
-        r = numpy.eye(2)*0.01
+        r = numpy.eye(c.shape[0])*0.01
         
         # continuous-time algebraic Riccati equation solution
         p = scipy.linalg.solve_continuous_are(a.T, c.T, q, r)
@@ -88,10 +88,10 @@ class LQGSolver:
        
         return f
     
-    def _closed_loop_response(self, a, b, c, xr, k, g, f, steps = 500):
+    def _closed_loop_response(self, a, b, c, xr, k, g, f, steps = 500, observation_noise = 0.0, disturbance = False):
 
         x       = numpy.zeros((a.shape[0], 1))
-        x_hat   = numpy.zeros((a.shape[0], a.shape[0]))
+        x_hat   = numpy.zeros((a.shape[0], 1))
         y_hat   = numpy.zeros((c.shape[0], 1))
         y       = numpy.zeros((c.shape[0], 1))
 
@@ -103,50 +103,33 @@ class LQGSolver:
 
         
         for n in range(steps):
+
+            y_obs       = y + observation_noise*numpy.random.randn(y.shape[0], y.shape[1])
         
             #kalman observer
-            y_hat  = c@x_hat
-            e      = y - y_hat
-            dx_hat = a@x_hat + b@u + f@e
-            x_hat  = x_hat + dx_hat*self.dt
- 
-            #apply LQR
-            error  = xr*g - x_hat
-            u     = k@error
+            y_hat   = c@x_hat
+            e       = y_obs - y_hat
+            dx_hat  = a@x_hat + b@u + f@e
+            x_hat   = x_hat + dx_hat*self.dt
+            
+            #apply LQR control law
+            error   = xr*g - x_hat
+            u       = k@error
             
             #system dynamics step
-            x     = x + (a@x + b@u)*self.dt
-            y     = c@x 
+            x       = x + (a@x + b@u)*self.dt
 
-            if n == steps//2:
-                x[1, 0]+= 1
+
+            y       = c@x
             
+            #disturbance for testing
+            if disturbance == True and n == steps//2:
+                x[:, 0]+= 1
+                        
             
             u_result[n] = u[:, 0]
             x_result[n] = x[:, 0]
             y_result[n] = y[:, 0]
 
         return u_result, x_result, y_result
-            
-
-    def _closed_loop_response_lqr(self, a, b, xr, k, steps = 500):
-        x  = numpy.zeros((a.shape[0], 1))
-
-        u_result = numpy.zeros((steps, b.shape[1]))
-        x_result = numpy.zeros((steps, a.shape[0]))
-
-        for n in range(steps):
-            #compute error, include gain scaling matrix
-            error = xr - x
-
-            #apply controll law
-            u = k@error
-            
-            #system dynamics step
-            x = x + (a@x + b@u)*self.dt
-
-            u_result[n] = u[:, 0]
-            x_result[n] = x[:, 0]
-
-        return u_result, x_result
             
