@@ -23,8 +23,8 @@ class LQRSolver:
 
         return self.k, self.g
     
-    def closed_loop_response(self, xr, steps = 500):
-        u_result, x_result, y_result = self._closed_loop_response(self.a, self.b, self.c, xr, self.k, self.g, steps)
+    def closed_loop_response(self, xr, steps = 500, noise = 0.0, disturbance = False):
+        u_result, x_result, y_result = self._closed_loop_response(self.a, self.b, self.c, xr, self.k, self.g, steps, noise, disturbance)
 
         return u_result, x_result, y_result
      
@@ -74,7 +74,7 @@ class LQRSolver:
 
         return g
     
-    def _closed_loop_response(self, a, b, c, xr, k, g = None, steps = 500):
+    def _closed_loop_response(self, a, b, c, xr, k, g = None, steps = 500, noise = 0.0, disturbance = False):
 
         x  = numpy.zeros((a.shape[0], 1))
 
@@ -87,7 +87,7 @@ class LQRSolver:
             g = numpy.ones_like(xr)
 
         for n in range(steps):
-            x_obs       = x + 0.1*numpy.random.randn(x.shape[0], x.shape[1])
+            x_obs       = x + noise*numpy.random.randn(x.shape[0], x.shape[1])
 
             #compute error, include gain scaling matrix
             error = xr*g - x_obs
@@ -100,8 +100,8 @@ class LQRSolver:
             x     = x + (a@x + b@u)*self.dt
 
             
-            if n == steps//2:
-                x[1, 0]+= 1
+            if disturbance == True and n == steps//2:
+                x[:, 0]+= 1
 
 
             y     = c@x

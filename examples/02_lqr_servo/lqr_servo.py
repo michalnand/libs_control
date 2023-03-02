@@ -60,4 +60,4 @@ if __name__ == "__main__":
     #step response
     u_result, x_result, y_result = lqr.closed_loop_response(xr, steps)
 
-    LibsControl.plot_closed_loop_response(t_result, u_result, y_result, "results/closed_loop_response.png", ["voltage [V]"], ["velocity, [rad/s]", "position [rad]"] )
+    LibsControl.plot_closed_loop_response(t_result, u_result, x_result, "results/closed_loop_response.png", ["voltage [V]"], ["velocity, [rad/s]", "position [rad]"] )
