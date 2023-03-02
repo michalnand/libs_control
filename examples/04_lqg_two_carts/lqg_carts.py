@@ -13,6 +13,7 @@ if __name__ == "__main__":
 
     mat_a = numpy.zeros((4, 4))
     mat_b = numpy.zeros((4, 1))
+    mat_c = numpy.zeros((2, 4))
         
 
 
@@ -30,7 +31,13 @@ if __name__ == "__main__":
     mat_b[2][0] = 1.0/m1
 
 
-    dt          = 1.0/256.0
+    mat_c[0][0] = 1.0
+    mat_c[1][1] = 1.0
+
+
+
+
+    dt          = 1.0/256
 
     steps = 1200
 
@@ -40,36 +47,39 @@ if __name__ == "__main__":
     r = numpy.array( [ [0.1] ]) 
 
 
-    ds   = LibsControl.DynamicalSystem(mat_a, mat_b, dt=dt)
+    ds   = LibsControl.DynamicalSystem(mat_a, mat_b, mat_c, dt=dt)
 
+    print(str(ds))
 
     #plot system open loop step response
     u_result, x_result, y_result = ds.step_response(amplitudes = 1, steps=steps)
-    LibsControl.plot_open_loop_response(t_result, y_result, "results/open_loop_response", labels=["x0 [m]", "x1 [m]", "v0 [m/s]", "v1 [m/s]"])
+    LibsControl.plot_open_loop_response(t_result, y_result, "results/open_loop_response") #, labels=["x0 [m]", "x1 [m]"])
 
+
+ 
+    lqg     = LibsControl.LQGSolver(ds.mat_a, ds.mat_b, ds.mat_c, q, r, dt)
+
+    k, g, f = lqg.solve()
 
     
-    lqr = LibsControl.LQRSolver(ds.mat_a, ds.mat_b, ds.mat_c, q, r, dt)
-
-    k, g    = lqr.solve()
-
     #print solved controller matrices
     print("controller\n\n")
     print("k=\n", k, "\n")
     print("g=\n", g, "\n")
+    print("f=\n", f, "\n")
     print("\n\n")
 
-
+    
     #plot poles, both : open and closed loop
-    re_ol, im_ol, re_cl, im_cl = lqr.get_poles()
+    re_ol, im_ol, re_cl, im_cl = lqg.get_poles()
     LibsControl.plot_poles(re_ol, im_ol, re_cl, im_cl, "results/poles.png")
 
-
+    
     #required state
     xr = numpy.array([[0.0, 1.0, 0.0, 0.0]]).T
 
     #step response
-    u_result, x_result, y_result, = lqr.closed_loop_response(xr, steps)
+    u_result, x_result, y_result = lqg.closed_loop_response(xr, steps)
 
     LibsControl.plot_closed_loop_response(t_result, u_result, y_result, "results/closed_loop_response.png", ["force [N]"], ["x0 [m]", "x1 [m]", "v0 [m/s]", "v1 [m/s]"] )
     

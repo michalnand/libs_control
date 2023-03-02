@@ -17,10 +17,17 @@ u.shape = (inputs_count, 1)
 class DynamicalSystem:
 
 
-    def __init__(self, mat_a, mat_b, dt):
+    def __init__(self, mat_a, mat_b, mat_c = None, dt = 0.001):
 
         self.mat_a = mat_a
         self.mat_b = mat_b
+
+        #choose full state output if not output matrix provided
+        if mat_c is not None:
+            self.mat_c = mat_c
+        else:
+            self.mat_c = numpy.eye(self.mat_a.shape[0])
+
         self.dt    = dt
 
     def __repr__(self) -> str:
@@ -39,24 +46,38 @@ class DynamicalSystem:
             result+= "\n"
         result+= "\n"
 
+        result+= "c = \n"
+        for j in range(self.mat_c.shape[0]):
+            for i in range(self.mat_c.shape[1]):
+                result+= str(round(self.mat_c[j][i], 5)) + " "
+            result+= "\n"
+        result+= "\n" 
+
         return result
 
+    def forward(self, x, u):
+        x_new   = x + (self.mat_a@x + self.mat_b@u)*self.dt
+        y       = self.mat_c@x_new
+
+        return x_new, y
 
     def step_response(self, amplitudes, steps = 1000):
         x        = numpy.zeros((self.mat_a.shape[0], 1))
         u        = amplitudes*numpy.ones((self.mat_b.shape[1], 1))
 
-        x_result = numpy.zeros((steps, self.mat_a.shape[0]))
-        u_result = numpy.zeros((steps, self.mat_b.shape[0]))
 
+        u_result = numpy.zeros((steps, self.mat_b.shape[0]))
+        x_result = numpy.zeros((steps, self.mat_a.shape[0]))
+        y_result = numpy.zeros((steps, self.mat_c.shape[0]))
   
         for n in range(steps):
             #system dynamics step
 
-            x     = x + (self.mat_a@x + self.mat_b@u)*self.dt
+            x, y = self.forward(x, u)
 
             u_result[n] = u[:, 0]
             x_result[n] = x[:, 0]
+            y_result[n] = y[:, 0] 
 
-        return u_result, x_result
+        return u_result, x_result, y_result
     

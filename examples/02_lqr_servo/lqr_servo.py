@@ -33,12 +33,12 @@ if __name__ == "__main__":
 
 
     #plot system open loop step response
-    u_result, x_result = ds.step_response(amplitudes = 1.0, steps=10000)
-    LibsControl.plot_open_loop_response(t_result, x_result, "results/open_loop_response", labels=["velocity rad/s", "position rad"])
+    u_result, x_result, y_result = ds.step_response(amplitudes = 1.0, steps=10000)
+    LibsControl.plot_open_loop_response(t_result, y_result, "results/open_loop_response", labels=["velocity rad/s", "position rad"])
 
 
     
-    lqr = LibsControl.LQRSolver(ds.mat_a, ds.mat_b, q, r, dt)
+    lqr = LibsControl.LQRSolver(ds.mat_a, ds.mat_b, ds.mat_c, q, r, dt)
 
     k, g    = lqr.solve()
 
@@ -58,6 +58,6 @@ if __name__ == "__main__":
     xr = numpy.array([[0.0, 1.0]]).T
 
     #step response
-    u_result, x_result = lqr.closed_loop_response(xr, steps)
+    u_result, x_result, y_result = lqr.closed_loop_response(xr, steps)
 
-    LibsControl.plot_closed_loop_response(t_result, u_result, x_result, "results/closed_loop_response.png", ["voltage [V]"], ["velocity, [rad/s]", "position [rad]"] )
+    LibsControl.plot_closed_loop_response(t_result, u_result, y_result, "results/closed_loop_response.png", ["voltage [V]"], ["velocity, [rad/s]", "position [rad]"] )
