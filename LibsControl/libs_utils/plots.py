@@ -79,13 +79,18 @@ def plot_closed_loop_response(t_result, u_result, x_result, x_hat = None, file_n
             lbl = "x[" + str(i) + "]"
 
         if x_hat is not None:
-            axs[idx].plot(t_result, x_hat[:, i], label=lbl, color="deepskyblue")
 
-   
-        axs[idx].plot(t_result, x_result[:, i], label=lbl, color="purple")
+            axs[idx].plot(t_result, x_hat[:, i], label=lbl + " estimated", color="purple", alpha=0.75)
+            axs[idx].plot(t_result, x_result[:, i], label=lbl + " measured", color="deepskyblue", alpha=0.75)
+
+        else:
+            axs[idx].plot(t_result, x_result[:, i], label=lbl, color="deepskyblue", alpha=0.75)
         
         axs[idx].set_xlabel("time [s]")
         axs[idx].set_ylabel(lbl)
+
+        if x_hat is not None: 
+            axs[idx].legend()
         axs[idx].grid()
 
         idx+= 1

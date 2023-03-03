@@ -2,16 +2,53 @@ import numpy
 import scipy.linalg
 import matplotlib.pyplot as plt
 
+'''
+solve LQG for dynamical system : 
+dx = A@x + B@u
+y  = Cx
 
+controller : 
+u = -K@x_hat + Gx_r
+
+Kalman observer : 
+dx_hat = Ax_hat + Bu + F(y - y_hat)
+y_hat  = Cx_hat
+
+where : 
+N : system order
+M : system inputs count
+K : system outputs count
+
+A : system dynamic matrix, NxN
+B : system input   matrix, NxM
+C : system output matrix,  KxM
+
+x   : state column vector, Nx1
+x_r : required state, same shape as x
+u   : control input, column vector, Mx1
+
+Q : diagonal matrix, NxN, weighting for required state elements
+R : diagonal matrix, MxM, weighting for controll value
+W : observation noise variance matrix, KxK
+
+
+returns : 
+
+K : computed controller feedback matrix, MxN
+G : computed required state (x_r) scaling matrix, to remove steady state error, Nx1
+F : kalman gain matrix, NxN
+'''
 
 class LQGSolver:
 
-    def __init__(self, a, b, c, q, r, dt):
+
+    def __init__(self, a, b, c, q, r, w, dt):
         self.a = a
         self.b = b
         self.c = c
         self.q = q
         self.r = r
+        self.w = w
         self.dt= dt
  
         
@@ -19,7 +56,7 @@ class LQGSolver:
         self.k = self._find_k(self.a, self.b, self.q, self.r)
         self.g = self._find_g(self.a, self.b, self.k)
 
-        self.f = self._find_f(self.a, self.c, self.q)
+        self.f = self._find_f(self.a, self.c, self.q, self.w)
 
         #self.f = numpy.zeros((4, 2))
 
@@ -77,14 +114,12 @@ class LQGSolver:
         return g
     
 
-    def _find_f(self, a, c, q):
-
-        r = numpy.eye(c.shape[0])*0.01
+    def _find_f(self, a, c, q, w):
         
         # continuous-time algebraic Riccati equation solution
-        p = scipy.linalg.solve_continuous_are(a.T, c.T, q, r)
+        p = scipy.linalg.solve_continuous_are(a.T, c.T, q, w)
 
-        f = (p@c.T)@scipy.linalg.inv(r)
+        f = (p@c.T)@scipy.linalg.inv(w)
        
         return f
     
@@ -106,11 +141,11 @@ class LQGSolver:
         
         for n in range(steps):
 
-            y_obs       = y + observation_noise*numpy.random.randn(y.shape[0], y.shape[1])
+            
         
             #kalman observer
             y_hat   = c@x_hat
-            e       = y_obs - y_hat
+            e       = y - y_hat
             dx_hat  = a@x_hat + b@u + f@e
             x_hat   = x_hat + dx_hat*self.dt
             
@@ -122,6 +157,8 @@ class LQGSolver:
             x       = x + (a@x + b@u)*self.dt
             y       = c@x
             
+            y       = y + observation_noise*numpy.random.randn(y.shape[0], y.shape[1])
+
             #disturbance for testing
             if disturbance == True and n == steps//2:
                 x[:, 0]+= 1

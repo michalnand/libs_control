@@ -38,6 +38,8 @@ if __name__ == "__main__":
 
 
     dt          = 1.0/256
+    
+    observation_noise = 0.1
 
     steps = 1500
 
@@ -45,6 +47,9 @@ if __name__ == "__main__":
 
     q = numpy.array([ [0.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0] ] )
     r = numpy.array( [ [0.1] ]) 
+
+    #measurement noise matrix
+    w = (observation_noise**2)*numpy.eye(mat_c.shape[0])
 
 
     ds   = LibsControl.DynamicalSystem(mat_a, mat_b, mat_c, dt=dt)
@@ -57,7 +62,7 @@ if __name__ == "__main__":
 
 
  
-    lqg     = LibsControl.LQGSolver(ds.mat_a, ds.mat_b, ds.mat_c, q, r, dt)
+    lqg     = LibsControl.LQGSolver(ds.mat_a, ds.mat_b, ds.mat_c, q, r, w, dt)
 
     k, g, f = lqg.solve()
 
@@ -79,7 +84,8 @@ if __name__ == "__main__":
     xr = numpy.array([[0.0, 1.0, 0.0, 0.0]]).T
 
     #step response
-    u_result, x_result, x_hat_result, y_result = lqg.closed_loop_response(xr, steps, observation_noise = 0.1, disturbance = True)
+    u_result, x_result, x_hat_result, y_result = lqg.closed_loop_response(xr, steps, observation_noise = observation_noise, disturbance = True)
 
     LibsControl.plot_closed_loop_response(t_result, u_result, x_result, x_hat_result, "results/closed_loop_response.png", ["force [N]"], ["x0 [m]", "x1 [m]", "v0 [m/s]", "v1 [m/s]"] )
+    LibsControl.plot_closed_loop_response(t_result, u_result, y_result, x_hat_result[:, 0:2], "results/closed_loop_response_observed.png", ["force [N]"], ["x0 [m]", "x1 [m]"] )
     

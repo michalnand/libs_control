@@ -3,7 +3,32 @@ import scipy.linalg
 import matplotlib.pyplot as plt
 
 
+'''
+solve LQR for dynamical system : 
+dx = A@x + B@u
 
+controller : 
+u = -K@x + Gx_r
+
+where : 
+N : system order
+M : system inputs count
+
+A : system dynamic matrix, NxN
+B : system input   matrix, NxM
+
+x   : state column vector, Nx1
+x_r : required state, same shape as x
+u   : control input, column vector, Mx1
+
+Q : diagonal matrix, NxN, weighting for required state elements
+R : diagonal amtrix, MxM, weighting for controll value
+
+returns : 
+
+K : computed controller feedback matrix, shape MxN
+G : computed required state (x_r) scaling matrix, to remove steady state error, Nx1
+'''
 class LQRSolver:
 
     def __init__(self, a, b, c, q, r, dt):
