@@ -34,7 +34,7 @@ W : observation noise variance matrix, KxK
 
 returns : 
 
-K : computed controller feedback matrix, MxN
+K : computed controller feedback matrix, NxM
 G : computed required state (x_r) scaling matrix, to remove steady state error, Nx1
 F : kalman gain matrix, NxN
 '''

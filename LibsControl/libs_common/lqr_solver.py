@@ -26,7 +26,7 @@ R : diagonal amtrix, MxM, weighting for controll value
 
 returns : 
 
-K : computed controller feedback matrix, shape MxN
+K : computed controller feedback matrix, NxM
 G : computed required state (x_r) scaling matrix, to remove steady state error, Nx1
 '''
 class LQRSolver:
