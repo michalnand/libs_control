@@ -85,7 +85,7 @@ class LQRSolver:
         '''
         
         # compute the LQR gain
-        k =  scipy.linalg.inv(r) * (b.T@p)
+        k =  scipy.linalg.inv(r)@(b.T@p)
         return k
     
     '''

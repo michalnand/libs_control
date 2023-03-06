@@ -29,7 +29,8 @@ u   : control input, column vector, Mx1
 
 Q : diagonal matrix, NxN, weighting for required state elements
 R : diagonal matrix, MxM, weighting for controll value
-W : observation noise variance matrix, KxK
+V : observation noise variance matrix, KxK
+W : process noise variance matrix, NxN, (optional)
 
 
 returns : 
@@ -42,7 +43,7 @@ F : kalman gain matrix, NxN
 class LQGSolver:
 
 
-    def __init__(self, a, b, c, q, r, w, dt):
+    def __init__(self, a, b, c, q, r, w = None, dt = 0.001):
         self.a = a
         self.b = b
         self.c = c
@@ -50,6 +51,9 @@ class LQGSolver:
         self.r = r
         self.w = w
         self.dt= dt
+
+        if self.w is None:
+            self.w = numpy.zeros(self.c.shape)
  
         
     def solve(self):
@@ -78,6 +82,19 @@ class LQGSolver:
         im_cl = poles_cl.imag
 
         return re_ol, im_ol, re_cl, im_cl
+    
+    def forward(self, x_hat, u, xr, y):
+        #kalman observer
+        y_hat   = self.c@x_hat
+        e       = y - y_hat
+        dx_hat  = self.a@x_hat + self.b@u + self.f@e
+        x_hat   = x_hat + dx_hat*self.dt
+        
+        #apply LQR control law
+        error   = xr*self.g - x_hat
+        u       = self.k@error
+
+        return x_hat, u
 
     '''
     solve the continuous time lqr controller.
@@ -99,7 +116,7 @@ class LQGSolver:
         '''
         
         # compute the LQR gain
-        k =  scipy.linalg.inv(r) * (b.T@p)
+        k =  scipy.linalg.inv(r) @ (b.T@p)
         return k
     
     '''
@@ -117,7 +134,10 @@ class LQGSolver:
     def _find_f(self, a, c, q, w):
         
         # continuous-time algebraic Riccati equation solution
+
+
         p = scipy.linalg.solve_continuous_are(a.T, c.T, q, w)
+        
 
         f = (p@c.T)@scipy.linalg.inv(w)
        
@@ -161,7 +181,8 @@ class LQGSolver:
 
             #disturbance for testing
             if disturbance == True and n == steps//2:
-                x[:, 0]+= 1
+                #x[:, 0]+= numpy.abs(x[:, 0])
+                x = 2.0*xr
                         
             
             u_result[n]     = u[:, 0]

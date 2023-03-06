@@ -55,20 +55,21 @@ class DynamicalSystem:
 
         return result
 
-    def forward(self, x, u):
+    def forward(self, x, u):        
         x_new   = x + (self.mat_a@x + self.mat_b@u)*self.dt
         y       = self.mat_c@x_new
 
         return x_new, y
 
     def step_response(self, amplitudes, steps = 1000):
-        x        = numpy.zeros((self.mat_a.shape[0], 1))
+        x        = numpy.zeros((self.mat_a.shape[1], 1))
         u        = amplitudes*numpy.ones((self.mat_b.shape[1], 1))
 
 
-        u_result = numpy.zeros((steps, self.mat_b.shape[0]))
+        u_result = numpy.zeros((steps, self.mat_b.shape[1]))
         x_result = numpy.zeros((steps, self.mat_a.shape[0]))
         y_result = numpy.zeros((steps, self.mat_c.shape[0]))
+
   
         for n in range(steps):
             #system dynamics step
