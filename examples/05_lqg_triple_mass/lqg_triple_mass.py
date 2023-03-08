@@ -16,10 +16,27 @@ if __name__ == "__main__":
     k   = torque_stall*r/u_max
     mu  = (k/(r*w_max))*(u_max - k*w_max)
 
-    
-    mat_a = numpy.zeros((2, 2))
-    mat_b = numpy.zeros((2, 1))
-    mat_c = numpy.zeros((2, 2))
+    c1 = 0.1
+    c2 = 0.2
+    c3 = 0.3
+    th1 = 0.5
+    th2 = 0.6
+    th3 = 0.7
+    d1  = 0.9
+    d2  = 1.0
+    d3  = 1.1
+
+    mat_a = numpy.zeros((6, 6))
+    mat_b = numpy.zeros((6, 1))
+    mat_c = numpy.eye(6)
+
+    mat_a[0][3] = 1.0
+    mat_a[1][4] = 1.0
+    mat_a[2][5] = 1.0
+
+    mat_a[3][0] = -(c1/th1) - (c2/th2)
+    mat_a[3][1] = (c2/th2)
+    mat_a[3][3] = (c2/th2)
 
     mat_a[0][0] = 0.0
     mat_a[1][1] = (1.0/j_wheel)*((k/r)*(-k) -mu)
@@ -27,8 +44,7 @@ if __name__ == "__main__":
     
     mat_b[0][0] = 1.0
 
-    mat_c[0][0] = 1.0
-    mat_c[1][1] = 1.0
+  
 
     observation_noise = 0.1
 

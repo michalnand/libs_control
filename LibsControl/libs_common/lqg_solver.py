@@ -171,6 +171,7 @@ class LQGSolver:
             
             #apply LQR control law
             error   = xr*g - x_hat
+
             u       = k@error
             
             #system dynamics step
