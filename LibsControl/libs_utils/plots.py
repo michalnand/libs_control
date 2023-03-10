@@ -7,9 +7,12 @@ def plot_poles(re_ol, im_ol, re_cl, im_cl, file_name):
     plt.clf()
 
     fig, axs = plt.subplots(1, 1, figsize=(5, 5))
+
+    x_range = max(numpy.abs(numpy.hstack([re_ol, re_cl])))
+    y_range = max(numpy.abs(numpy.hstack([im_ol, im_cl])))
     
-    axs.set_xlim([1.2*numpy.min(-numpy.abs([re_ol, re_cl])), 1.2*numpy.max(numpy.abs([re_ol, re_cl]))])
-    axs.set_ylim([1.2*numpy.min(-numpy.abs([im_ol, im_cl])), 1.2*numpy.max(numpy.abs([im_ol, im_cl]))])
+    axs.set_xlim([-1.2*x_range, 1.2*x_range])
+    axs.set_ylim([-1.2*y_range, 1.2*y_range])
     axs.scatter(re_ol, im_ol, label="open loop", s = 50)
     axs.scatter(re_cl, im_cl, label="closed loop", s = 25)
 

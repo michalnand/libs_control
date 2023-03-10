@@ -40,7 +40,7 @@ G : computed required state (x_r) scaling matrix, to remove steady state error, 
 F : kalman gain matrix, NxN
 '''
 
-class LQGSolver:
+class LQGISolver:
 
 
     def __init__(self, a, b, c, q, r, w = None, dt = 0.001):
@@ -54,22 +54,95 @@ class LQGSolver:
 
         if self.w is None:
             self.w = numpy.zeros(self.c.shape)
+
+
+        n = self.a.shape[0]  #system order
+        m = self.b.shape[1]  #inputs count
+        k = self.c.shape[0]  #outputs count
+
+        self.a_aug  = numpy.zeros((m+n, m+n))
+        self.b_aug  = numpy.zeros((m+n, m))
+        self.c_aug  = numpy.zeros((k, m+n)) 
+        self.q_aug  = numpy.zeros((m+n, m+n))
+        
+
+        self.a_aug[m:, 0:m]     = self.b
+        self.a_aug[m:,  m:]      = self.a
+
+        numpy.fill_diagonal(self.b_aug[0:m, 0:m], 1.0)
+
+        self.c_aug[:,  m:]        = self.c
+        self.q_aug[m:, m:]       = self.q
+
+        numpy.fill_diagonal(self.q_aug[0:m, 0:m], 0.1)
  
         
     def solve(self):
-        self.k = self._find_k(self.a, self.b, self.q, self.r)
-        self.g = self._find_g(self.a, self.b, self.c, self.k)
+        self.k  = self._find_k(self.a_aug, self.b_aug, self.q_aug, self.r)
 
-        self.f = self._find_f(self.a, self.c, self.q, self.w)
+        self.g  = self._find_g(self.a_aug, self.b_aug, self.c_aug, self.k)
 
-        #self.f = numpy.zeros((4, 2))
+        self.f  = self._find_f(self.a, self.c, self.q, self.w)
 
         return self.k, self.g, self.f
     
     def closed_loop_response(self, xr, steps = 500, observation_noise = 0.0, disturbance = False):
-        u_result, x_result, x_hat_result, y_result = self._closed_loop_response(self.a, self.b, self.c, xr, self.k, self.g, self.f, steps, observation_noise, disturbance)
+
+        x       = numpy.zeros((self.a.shape[0], 1))
+        
+        x_hat   = numpy.zeros((self.a.shape[0], 1))
+        y_hat   = numpy.zeros((self.c.shape[0], 1))
+        y       = numpy.zeros((self.c.shape[0], 1))
+
+        u       = numpy.zeros((self.b.shape[1], 1))
+
+        u_result        = numpy.zeros((steps, self.b.shape[1]))
+        x_result        = numpy.zeros((steps, self.a.shape[0]))
+        x_hat_result    = numpy.zeros((steps, self.a.shape[0]))
+        y_result        = numpy.zeros((steps, self.c.shape[0]))
+        
+        xru = numpy.zeros(self.g.shape)
+        xru[u.shape[0]:,:] = xr
+
+
+        for n in range(steps):
+            #kalman observer
+            y_hat   = self.c@x_hat
+            e       = y - y_hat
+            dx_hat  = self.a@x_hat + self.b@u + self.f@e
+            x_hat   = x_hat + dx_hat*self.dt
+            
+            #apply LQR control law
+
+            xu = numpy.vstack([u, x_hat])
+
+            error   = xru*self.g - xu
+            #error   = -xu
+
+            du       = self.k@error
+
+            u = u + du*self.dt
+                        
+            
+            #system dynamics step
+            x       = x + (self.a@x + self.b@u)*self.dt
+            y       = self.c@x
+            
+            y       = y + observation_noise*numpy.random.randn(y.shape[0], y.shape[1])
+
+           
+            #disturbance for testing
+            if disturbance == True and n == steps//2:
+                x+= numpy.abs(x)
+                
+            
+            u_result[n]     = u[:, 0]
+            x_result[n]     = x[:, 0]
+            x_hat_result[n] = x_hat[:, 0]
+            y_result[n]     = y[:, 0]
 
         return u_result, x_result, x_hat_result, y_result
+
      
     def get_poles(self):
         
@@ -77,7 +150,7 @@ class LQGSolver:
         re_ol = poles_ol.real
         im_ol = poles_ol.imag
 
-        poles_cl = numpy.linalg.eigvals(self.a - self.b@self.k) + 0j
+        poles_cl = numpy.linalg.eigvals(self.a_aug - self.b_aug@self.k) + 0j
         re_cl = poles_cl.real
         im_cl = poles_cl.imag
 
@@ -123,7 +196,8 @@ class LQGSolver:
     find scaling for reference value using steaduy state response
     '''
     def _find_g(self, a, b, c, k):
-        x_steady_state = -numpy.linalg.pinv(a-b@k)@b@k
+
+        x_steady_state = -numpy.linalg.pinv(a - b@k)@b@k
         #y_steady_state = x_steady_state
         g = 1.0/numpy.diagonal(x_steady_state)
         g = numpy.expand_dims(g, 1)
@@ -143,56 +217,3 @@ class LQGSolver:
        
         return f
     
-    def _closed_loop_response(self, a, b, c, xr, k, g, f, steps = 500, observation_noise = 0.0, disturbance = False):
-
-        x       = numpy.zeros((a.shape[0], 1))
-        
-        x_hat   = numpy.zeros((a.shape[0], 1))
-        y_hat   = numpy.zeros((c.shape[0], 1))
-        y       = numpy.zeros((c.shape[0], 1))
-
-        u       = numpy.zeros((b.shape[1], 1))
-
-        u_result        = numpy.zeros((steps, b.shape[1]))
-        x_result        = numpy.zeros((steps, a.shape[0]))
-        x_hat_result    = numpy.zeros((steps, a.shape[0]))
-        y_result        = numpy.zeros((steps, c.shape[0]))
-        
-        
-        for n in range(steps):
-
-            
-        
-            #kalman observer
-            y_hat   = c@x_hat
-            e       = y - y_hat
-            dx_hat  = a@x_hat + b@u + f@e
-            x_hat   = x_hat + dx_hat*self.dt
-            
-            #apply LQR control law
-            error   = xr*g - x_hat
-
-            u       = k@error
-
-          
-                        
-            
-            #system dynamics step
-            x       = x + (a@x + b@u)*self.dt
-            y       = c@x
-            
-            y       = y + observation_noise*numpy.random.randn(y.shape[0], y.shape[1])
-
-           
-            #disturbance for testing
-            if disturbance == True and n == steps//2:
-                x+= numpy.abs(x)
-                
-            
-            u_result[n]     = u[:, 0]
-            x_result[n]     = x[:, 0]
-            x_hat_result[n] = x_hat[:, 0]
-            y_result[n]     = y[:, 0]
-
-        return u_result, x_result, x_hat_result, y_result
-            
