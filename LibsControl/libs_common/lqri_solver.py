@@ -101,16 +101,6 @@ class LQRISolver:
 
         return k, ki
     
-    '''
-    find scaling for reference value using steaduy state response
-    '''
-    def _find_g(self, a, b, k):
-        x_steady_state = -numpy.linalg.pinv(a-b@k)@b@k
-        #y_steady_state = c@x_steady_state
-        g = 1.0/numpy.diagonal(x_steady_state)
-        g = numpy.expand_dims(g, 1)
-
-        return g
     
     def _closed_loop_response(self, a, b, c, xr, k, ki, steps = 500, noise = 0.0, disturbance = False):
 
@@ -119,8 +109,6 @@ class LQRISolver:
         u_result = numpy.zeros((steps, b.shape[1]))
         x_result = numpy.zeros((steps, a.shape[0]))
         y_result = numpy.zeros((steps, c.shape[0]))
-
-        u = numpy.zeros((1, c.shape[0]))
 
         error_sum = numpy.zeros((1, b.shape[1]))
 
