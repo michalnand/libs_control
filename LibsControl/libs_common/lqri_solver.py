@@ -29,7 +29,7 @@ returns :
 K : computed controller feedback matrix, NxM
 G : computed required state (x_r) scaling matrix, to remove steady state error, Nx1
 '''
-class LQRSolver:
+class LQRISolver:
 
     def __init__(self, a, b, c, q, r, dt):
 
@@ -43,13 +43,12 @@ class LQRSolver:
         self.dt= dt
         
     def solve(self):
-        self.k = self._find_k(self.a, self.b, self.q, self.r)
-        self.g = self._find_g(self.a, self.b, self.k)
-
-        return self.k, self.g
+        self.k, self.ki = self._find_ki(self.a, self.b, self.c, self.q, self.r)
+        
+        return self.k, self.ki
     
     def closed_loop_response(self, xr, steps = 500, noise = 0.0, disturbance = False):
-        u_result, x_result, y_result = self._closed_loop_response(self.a, self.b, self.c, xr, self.k, self.g, steps, noise, disturbance)
+        u_result, x_result, y_result = self._closed_loop_response(self.a, self.b, self.c, xr, self.k, self.ki, steps, noise, disturbance)
 
         return u_result, x_result, y_result
      
@@ -70,23 +69,37 @@ class LQRSolver:
     dx = A x + B u
     cost = sum x[k].T*Q*x[k] + u[k].T*R*u[k]
     '''
-    def _find_k(self, a, b, q, r):
-       
-        # continuous-time algebraic Riccati equation solution
-        p = scipy.linalg.solve_continuous_are(a, b, q, r)
+    def _find_ki(self, a, b, c, q, r):
 
-        '''
-        r_inv = scipy.linalg.inv(r)
-        p = numpy.zeros_like(a)
-        dt = 0.01
-        for i in range(1000):
-            dp = a.T@p + p@a - (p@b)@r_inv@(b.T@p) + q
-            p+= dp*dt
-        '''
+        n = self.a.shape[0]  #system order
+        m = self.b.shape[1]  #inputs count
+        k = self.c.shape[0]  #outputs count
+
+        #matrix augmentation with integral action
+        a_aug = numpy.zeros((n+k, n+k))
+        b_aug = numpy.zeros((n+k, m))
+        q_aug = numpy.zeros((n+k, n+k))
+
+        a_aug[0:n, 0:n] = a
+        a_aug[n:, 0:n]  = c
+
+        b_aug[0:n,0:m]  = b
+
+        q_aug[0:n,0:n]  = 0
+        q_aug[k:,k:]    = q
+
         
+        # continuous-time algebraic Riccati equation solution
+        p = scipy.linalg.solve_continuous_are(a_aug, b_aug, q_aug, r)
+
         # compute the LQR gain
-        k =  scipy.linalg.inv(r)@(b.T@p)
-        return k
+        ki_tmp =  scipy.linalg.inv(r)@(b_aug.T@p)
+
+        #split ki for k and integral action part ki
+        k   = ki_tmp[:, 0:a.shape[0]]
+        ki  = ki_tmp[:, a.shape[0]:]
+
+        return k, ki
     
     '''
     find scaling for reference value using steaduy state response
@@ -99,7 +112,7 @@ class LQRSolver:
 
         return g
     
-    def _closed_loop_response(self, a, b, c, xr, k, g, steps = 500, noise = 0.0, disturbance = False):
+    def _closed_loop_response(self, a, b, c, xr, k, ki, steps = 500, noise = 0.0, disturbance = False):
 
         x  = numpy.zeros((a.shape[0], 1))
  
@@ -107,16 +120,23 @@ class LQRSolver:
         x_result = numpy.zeros((steps, a.shape[0]))
         y_result = numpy.zeros((steps, c.shape[0]))
 
+        u = numpy.zeros((1, c.shape[0]))
+
+        error_sum = numpy.zeros((1, b.shape[1]))
 
         for n in range(steps):
             x_obs       = x + noise*numpy.random.randn(x.shape[0], x.shape[1])
 
-            #compute error, include gain scaling matrix
-            error = xr*g - x_obs
+            #compute error
+            error     = xr - x_obs
+
+            #integral action
+            error_sum = error_sum + error*self.dt
 
             #apply controll law
-            u = k@error
+            u = -k@x_obs + ki@error_sum
 
+          
             #apply disturbance
             if disturbance == True and n >= steps//2:
                 u+= 5

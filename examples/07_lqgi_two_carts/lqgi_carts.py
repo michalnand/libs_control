@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     dt          = 1.0/256
     
-    observation_noise = 0.1
+    observation_noise = 0.01
 
     steps = 1500
 
@@ -64,16 +64,20 @@ if __name__ == "__main__":
  
     lqgi     = LibsControl.LQGISolver(ds.mat_a, ds.mat_b, ds.mat_c, q, r, w, dt)
 
-    k, g, f = lqgi.solve()
+    lqgi.solve()
+
+    
+    k, ki, g, f = lqgi.solve()
 
     
     #print solved controller matrices
     print("controller\n\n")
     print("k=\n", k, "\n")
+    print("ki=\n", ki, "\n")
     print("g=\n", g, "\n")
     print("f=\n", f, "\n")
     print("\n\n")
-
+    
     
     #plot poles, both : open and closed loop
     re_ol, im_ol, re_cl, im_cl = lqgi.get_poles()
@@ -81,10 +85,10 @@ if __name__ == "__main__":
 
     
     #required state
-    xr = numpy.array([[0.0, 1.0, 0.0, 0.0]]).T
+    yr = numpy.array([[0.0, 2.0]]).T
 
     #step response
-    u_result, x_result, x_hat_result, y_result = lqgi.closed_loop_response(xr, steps, observation_noise = observation_noise, disturbance = True)
+    u_result, x_result, x_hat_result, y_result = lqgi.closed_loop_response(yr, steps, observation_noise = observation_noise, disturbance = True)
 
     LibsControl.plot_closed_loop_response(t_result, u_result, x_result, x_hat_result, "results/closed_loop_response.png", ["force [N]"], ["x0 [m]", "x1 [m]", "v0 [m/s]", "v1 [m/s]"] )
     LibsControl.plot_closed_loop_response(t_result, u_result, y_result, x_hat_result[:, 0:2], "results/closed_loop_response_observed.png", ["force [N]"], ["x0 [m]", "x1 [m]"] )

@@ -43,7 +43,7 @@ F : kalman gain matrix, NxN
 class LQGISolver:
 
 
-    def __init__(self, a, b, c, q, r, w, dt = 0.001):
+    def __init__(self, a, b, c, q, r, w = None, dt = 0.001):
         self.a = a
         self.b = b
         self.c = c
@@ -52,15 +52,41 @@ class LQGISolver:
         self.w = w
         self.dt= dt
 
-      
-    def solve(self): 
-        self.k, self.ki, self.g = self._find_kig(self.a, self.b, self.c, self.q, self.r)
+        if self.w is None:
+            self.w = numpy.zeros(self.c.shape)
+
+
+        n = self.a.shape[0]  #system order
+        m = self.b.shape[1]  #inputs count
+        k = self.c.shape[0]  #outputs count
+
+        self.a_aug  = numpy.zeros((m+n, m+n))
+        self.b_aug  = numpy.zeros((m+n, m))
+        self.c_aug  = numpy.zeros((k, m+n)) 
+        self.q_aug  = numpy.zeros((m+n, m+n))
+        
+
+        self.a_aug[m:, 0:m]     = self.b
+        self.a_aug[m:,  m:]      = self.a
+
+        numpy.fill_diagonal(self.b_aug[0:m, 0:m], 1.0)
+
+        self.c_aug[:,  m:]        = self.c
+        self.q_aug[m:, m:]       = self.q
+
+        #numpy.fill_diagonal(self.q_aug[0:m, 0:m], 1.0)
+ 
+        
+    def solve(self):
+        self.k  = self._find_k(self.a_aug, self.b_aug, self.q_aug, self.r)
+
+        self.g  = self._find_g(self.a_aug, self.b_aug, self.c_aug, self.k)
 
         self.f  = self._find_f(self.a, self.c, self.q, self.w)
 
-        return self.k,  self.ki, self.g, self.f
+        return self.k, self.g, self.f
     
-    def closed_loop_response(self, yr, steps = 500, observation_noise = 0.0, disturbance = False):
+    def closed_loop_response(self, xr, steps = 500, observation_noise = 0.0, disturbance = False):
 
         x       = numpy.zeros((self.a.shape[0], 1))
         
@@ -75,8 +101,9 @@ class LQGISolver:
         x_hat_result    = numpy.zeros((steps, self.a.shape[0]))
         y_result        = numpy.zeros((steps, self.c.shape[0]))
         
-        #error integral
-        error_int = numpy.zeros((self.c.shape[0], 1))
+        xr_aug = numpy.zeros(self.g.shape)
+        xr_aug[u.shape[0]:,:] = xr
+
 
         for n in range(steps):
             #kalman observer
@@ -85,17 +112,18 @@ class LQGISolver:
             dx_hat  = self.a@x_hat + self.b@u + self.f@e
             x_hat   = x_hat + dx_hat*self.dt
             
-            #integral action
-            #TODO : antiwindup
-            error = yr*self.g - y
-            error_int+= error*self.dt
-
             #apply LQR control law
-            u = self.ki@error_int - self.k@x_hat
 
+            xu = numpy.vstack([u, x_hat])
+
+            error   = xr_aug*self.g - xu
+            du      = self.k@error
+            u       = u + du*self.dt
+        
             #disturbance for testing
             if disturbance == True and n > steps//2:
-                u+= 10.0
+                u+= 1
+            
             
             #system dynamics step
             x       = x + (self.a@x + self.b@u)*self.dt
@@ -104,6 +132,8 @@ class LQGISolver:
             y       = y + observation_noise*numpy.random.randn(y.shape[0], y.shape[1])
 
            
+                
+            
             u_result[n]     = u[:, 0]
             x_result[n]     = x[:, 0]
             x_hat_result[n] = x_hat[:, 0]
@@ -118,13 +148,12 @@ class LQGISolver:
         re_ol = poles_ol.real
         im_ol = poles_ol.imag
 
-        poles_cl = numpy.linalg.eigvals(self.a - self.b@self.k) + 0j
+        poles_cl = numpy.linalg.eigvals(self.a_aug - self.b_aug@self.k) + 0j
         re_cl = poles_cl.real
         im_cl = poles_cl.imag
 
         return re_ol, im_ol, re_cl, im_cl
     
-    '''
     def forward(self, x_hat, u, xr, y):
         #kalman observer
         y_hat   = self.c@x_hat
@@ -137,62 +166,47 @@ class LQGISolver:
         u       = self.k@error
 
         return x_hat, u
-    '''
 
     '''
     solve the continuous time lqr controller.
     dx = A x + B u
     cost = sum x[k].T*Q*x[k] + u[k].T*R*u[k]
     '''
-    def _find_kig(self, a, b, c, q, r):
-        
-        n = self.a.shape[0]  #system order
-        m = self.b.shape[1]  #inputs count
-        k = self.c.shape[0]  #outputs count
-
-        a_aug  = numpy.zeros((n+k, n+k))
-        b_aug  = numpy.zeros((n+k, m))
-        q_aug  = numpy.zeros((n+k, n+k))
-    
-        a_aug[0:n, 0:n] = a
-        a_aug[n:, 0:n]  = c
-        b_aug[0:n, 0:m] = b
-
-        q_aug[0:n, 0:n] = q
-
-        
-        numpy.fill_diagonal(q_aug[n:, n:], 10.0)
-
+    def _find_k(self, a, b, q, r):
        
         # continuous-time algebraic Riccati equation solution
-        p = scipy.linalg.solve_continuous_are(a_aug, b_aug, q_aug, r)
+        p = scipy.linalg.solve_continuous_are(a, b, q, r)
+
+        '''
+        r_inv = scipy.linalg.inv(r)
+        p = numpy.zeros_like(a)
+        dt = 0.01
+        for i in range(1000):
+            dp = a.T@p + p@a - (p@b)@r_inv@(b.T@p) + q
+            p+= dp*dt
+        '''
         
         # compute the LQR gain
-        ki_tmp =  scipy.linalg.inv(r) @ (b_aug.T@p)
+        k =  scipy.linalg.inv(r) @ (b.T@p)
+        return k
+    
+    '''
+    find scaling for reference value using steady state response
+    '''
+    def _find_g(self, a, b, c, k):
 
-        #split ki for k and integral action part ki
-        k   = ki_tmp[:, 0:a.shape[0]]
-        ki  = ki_tmp[:, a.shape[0]:]
-
-        #find scaling for reference value using steady state response
-        x_steady_state = -numpy.linalg.pinv(a_aug - b_aug@ki_tmp)@b_aug@ki_tmp
+        x_steady_state = -numpy.linalg.pinv(a - b@k)@b@k
         g = 1.0/numpy.diagonal(x_steady_state)
         g = numpy.expand_dims(g, 1)
-        
-        g = g[n:]
-        
-        return k, ki, g
+
+        return g
     
-  
 
     def _find_f(self, a, c, q, w):
         
         # continuous-time algebraic Riccati equation solution
-
-
         p = scipy.linalg.solve_continuous_are(a.T, c.T, q, w)
-        
-
+    
         f = (p@c.T)@scipy.linalg.inv(w)
        
         return f
