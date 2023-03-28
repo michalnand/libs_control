@@ -163,7 +163,7 @@ class LQGSolver:
           
             #apply disturbance
             if disturbance == True and n >= steps//2:
-                u+= 5
+                u+= 5 
 
             #system dynamics step
             x     = x + (a@x + b@u)*self.dt

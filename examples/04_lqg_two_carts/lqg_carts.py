@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     mat_a = numpy.zeros((4, 4))
     mat_b = numpy.zeros((4, 1))
-    mat_c = numpy.zeros((4, 4))
+    mat_c = numpy.zeros((2, 4))
         
 
 
@@ -33,10 +33,7 @@ if __name__ == "__main__":
 
     mat_c[0][0] = 1.0
     mat_c[1][1] = 1.0
-    mat_c[2][2] = 1.0
-    mat_c[3][3] = 1.0
-
-
+    
 
 
     dt          = 1.0/256
