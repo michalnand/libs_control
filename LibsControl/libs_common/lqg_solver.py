@@ -61,9 +61,44 @@ class LQGSolver:
         return self.k, self.ki, self.f
     
     def closed_loop_response(self, xr, steps = 500, noise = 0.0, disturbance = False):
-        u_result, x_result, x_hat_result, y_result = self._closed_loop_response(self.a, self.b, self.c, xr, self.k, self.ki, self.f, steps, noise, disturbance)
+        n = self.a.shape[0]  #system order
+        m = self.b.shape[1]  #inputs count
+        k = self.c.shape[0]  #outputs count
+
+        x       = numpy.zeros((n, 1))
+
+        x_hat   = numpy.zeros((n, 1))
+        y       = numpy.zeros((k, 1))
+        u       = numpy.zeros((m, 1))
+
+        error_sum = numpy.zeros((n, 1))
+
+        u_result        = numpy.zeros((steps, m))
+        x_result        = numpy.zeros((steps, n))
+        x_hat_result    = numpy.zeros((steps, n))
+        y_result        = numpy.zeros((steps, k))
+
+        
+        for n in range(steps):
+            y_obs  = y + noise*numpy.random.randn(k, 1)
+
+            u, x_hat, error_sum = self.forward(u, xr, y_obs, x_hat, error_sum)
+
+            #apply disturbance
+            if disturbance == True and n >= steps//2:
+                u+= 5 
+
+            #system dynamics step
+            x     = x + (self.a@x + self.b@u)*self.dt
+            y     = self.c@x
+
+            u_result[n]     = u[:, 0]
+            x_result[n]     = x[:, 0]
+            x_hat_result[n] = x_hat[:, 0]
+            y_result[n]     = y[:, 0]
 
         return u_result, x_result, x_hat_result, y_result
+            
      
     def get_poles(self):
         
@@ -76,6 +111,27 @@ class LQGSolver:
         im_cl = poles_cl.imag
 
         return re_ol, im_ol, re_cl, im_cl
+    
+
+
+    def forward(self, u, xr, y, x_hat, error_sum):
+        #kalman observer, prediction and correction
+        y_hat       = self.c@x_hat
+        e           = y - y_hat
+        dx_hat      = self.a@x_hat + self.b@u + self.f@e
+        x_hat_new   = x_hat + dx_hat*self.dt
+
+        #compute error  
+        error     = xr - x_hat 
+ 
+        #integral action
+        error_sum_new = error_sum + error*self.dt
+        
+        #apply controll law
+        u = -self.k@x_hat + self.ki@error_sum_new
+
+        return u, x_hat_new, error_sum_new
+
     
     '''
     solve the continuous time lqr controller.
@@ -124,55 +180,3 @@ class LQGSolver:
         return f
     
     
-    def _closed_loop_response(self, a, b, c, xr, k, ki, f, steps = 500, noise = 0.0, disturbance = False):
-
-        x  = numpy.zeros((a.shape[0], 1))
-
-        x_hat   = numpy.zeros((a.shape[0], 1))
-        y_hat   = numpy.zeros((c.shape[0], 1))
-        y       = numpy.zeros((c.shape[0], 1))
-        u       = numpy.zeros((b.shape[1], 1))
-
-        u_result        = numpy.zeros((steps, b.shape[1]))
-        x_result        = numpy.zeros((steps, a.shape[0]))
-        x_hat_result    = numpy.zeros((steps, a.shape[0]))
-        y_result        = numpy.zeros((steps, c.shape[0]))
-
-        error_sum = numpy.zeros((1, b.shape[1]))
-
-        for n in range(steps):
-            y_obs       = y + noise*numpy.random.randn(y.shape[0], y.shape[1])
-
-            #kalman observer
-            y_hat   = c@x_hat
-            e       = y_obs - y_hat
-            dx_hat  = a@x_hat + b@u + f@e
-            x_hat   = x_hat + dx_hat*self.dt
-
-            #compute error  
-            error     = xr - x_hat
-
-            #integral action
-            error_sum = error_sum + error*self.dt
-
-            #print(">>> ", ki.shape, error_sum)
-
-            #apply controll law
-            u = -k@x_hat + ki@error_sum
-
-          
-            #apply disturbance
-            if disturbance == True and n >= steps//2:
-                u+= 5 
-
-            #system dynamics step
-            x     = x + (a@x + b@u)*self.dt
-            y     = c@x
-
-            u_result[n] = u[:, 0]
-            x_result[n] = x[:, 0]
-            x_hat_result[n] = x_hat[:, 0]
-            y_result[n] = y[:, 0]
-
-        return u_result, x_result, x_hat_result, y_result
-            

@@ -51,10 +51,36 @@ class LQRSolver:
         return self.k, self.g
     
     def closed_loop_response(self, xr, steps = 500, noise = 0.0, disturbance = False):
-        u_result, x_result, y_result = self._closed_loop_response(self.a, self.b, self.c, xr, self.k, self.g, steps, noise, disturbance)
+        n = self.a.shape[0]  #system order
+        m = self.b.shape[1]  #inputs count
+        k = self.c.shape[0]  #outputs count
+        
+        x  = numpy.zeros((n, 1))
+ 
+        u_result = numpy.zeros((steps, m))
+        x_result = numpy.zeros((steps, n))
+        y_result = numpy.zeros((steps, k))
+
+
+        for n in range(steps):
+            x_obs       = x + noise*numpy.random.randn(x.shape[0], x.shape[1])
+
+            u = self.forward(xr, x_obs)
+
+            #apply disturbance
+            if disturbance == True and n >= steps//2:
+                u+= 5
+
+            #system dynamics step
+            x     = x + (self.a@x + self.b@u)*self.dt
+            y     = self.c@x
+
+            u_result[n] = u[:, 0]
+            x_result[n] = x[:, 0]
+            y_result[n] = y[:, 0]
 
         return u_result, x_result, y_result
-     
+    
     def get_poles(self):
         
         poles_ol = numpy.linalg.eigvals(self.a) + 0j
@@ -66,6 +92,17 @@ class LQRSolver:
         im_cl = poles_cl.imag
 
         return re_ol, im_ol, re_cl, im_cl
+    
+
+    def forward(self, xr, x):
+        #compute error, include gain scaling matrix
+        error = xr*self.g - x
+
+        #apply controll law
+        u = self.k@error
+
+        return u
+
     
     '''
     solve the continuous time lqr controller.
@@ -100,36 +137,4 @@ class LQRSolver:
         g = numpy.expand_dims(g, 1)
 
         return g
-    
-    def _closed_loop_response(self, a, b, c, xr, k, g, steps = 500, noise = 0.0, disturbance = False):
-
-        x  = numpy.zeros((a.shape[0], 1))
- 
-        u_result = numpy.zeros((steps, b.shape[1]))
-        x_result = numpy.zeros((steps, a.shape[0]))
-        y_result = numpy.zeros((steps, c.shape[0]))
-
-
-        for n in range(steps):
-            x_obs       = x + noise*numpy.random.randn(x.shape[0], x.shape[1])
-
-            #compute error, include gain scaling matrix
-            error = xr*g - x_obs
-
-            #apply controll law
-            u = k@error
-
-            #apply disturbance
-            if disturbance == True and n >= steps//2:
-                u+= 5
-
-            #system dynamics step
-            x     = x + (a@x + b@u)*self.dt
-            y     = c@x
-
-            u_result[n] = u[:, 0]
-            x_result[n] = x[:, 0]
-            y_result[n] = y[:, 0]
-
-        return u_result, x_result, y_result
-            
+   
