@@ -6,9 +6,10 @@ import matplotlib.pyplot as plt
 '''
 solve LQR for dynamical system : 
 dx = A@x + B@u
+y  = x
 
 controller : 
-u = -K@x + Gx_r
+u = K@(Gx_r - x) 
 
 where : 
 N : system order
@@ -16,6 +17,7 @@ M : system inputs count
 
 A : system dynamic matrix, NxN
 B : system input   matrix, NxM
+C : diagonal matrix, NxN, projecting full state x to output y
 
 x   : state column vector, Nx1
 x_r : required state, same shape as x
