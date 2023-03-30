@@ -69,7 +69,7 @@ class LQRSolver:
 
             #apply disturbance
             if disturbance == True and n >= steps//2:
-                u+= 5
+                u+= 1
 
             #system dynamics step
             x     = x + (self.a@x + self.b@u)*self.dt
@@ -95,12 +95,11 @@ class LQRSolver:
     
 
     def forward(self, xr, x):
-        #compute error, include gain scaling matrix
+        #compute error
         error = xr*self.g - x
 
         #apply controll law
         u = self.k@error
-
         return u
 
     
@@ -132,6 +131,7 @@ class LQRSolver:
     '''
     def _find_g(self, a, b, k):
         x_steady_state = -numpy.linalg.pinv(a-b@k)@b@k
+
         #y_steady_state = c@x_steady_state
         g = 1.0/numpy.diagonal(x_steady_state)
         g = numpy.expand_dims(g, 1)

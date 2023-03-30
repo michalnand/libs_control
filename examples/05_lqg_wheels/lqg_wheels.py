@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     dt          = 1.0/1000.0
     
-    noise = 0.01 
+    noise = 0.1 
 
     steps = 8000
 
@@ -69,7 +69,7 @@ if __name__ == "__main__":
                         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
                         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] ] )
     
-    r = numpy.array( [ [0.001, 0.000], [0.000, 0.001] ]) 
+    r = numpy.array( [ [0.001, 0.0], [0.0, 0.001] ]) 
 
     #measurement noise matrix
     w = (noise**2)*numpy.eye(mat_c.shape[0])

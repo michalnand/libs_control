@@ -15,10 +15,11 @@ u = -K@x + Kie_int
 where : 
 N : system order
 M : system inputs count
+K : ssytem outputs
 
 A : system dynamic matrix, NxN
 B : system input   matrix, NxM
-C : diagonal matrix, NxN, projecting full state x to output y
+C : diagonal matrix, KxN, projecting state x to output y
 
 x   : state column vector, Nx1
 x_r : required state, same shape as x
@@ -50,7 +51,7 @@ class LQRISolver:
         
         return self.k, self.ki
     
-    def closed_loop_response(self, xr, steps = 500, noise = 0.0, disturbance = False):
+    def closed_loop_response(self, yr, steps = 500, noise = 0.0, disturbance = False):
 
         n = self.a.shape[0]  #system order
         m = self.b.shape[1]  #inputs count
@@ -66,8 +67,9 @@ class LQRISolver:
 
         for n in range(steps):
             x_obs       = x + noise*numpy.random.randn(x.shape[0], x.shape[1])
+            y_obs       = self.c@x_obs
 
-            u, error_sum = self.forward(xr, x_obs, error_sum)
+            u, error_sum = self.forward(yr, y_obs, x_obs, error_sum)
     
             #apply disturbance
             if disturbance == True and n >= steps//2:
@@ -95,10 +97,10 @@ class LQRISolver:
 
         return re_ol, im_ol, re_cl, im_cl
     
-    def forward(self, xr, x, error_sum):
+    def forward(self, yr, y, x, error_sum):
 
         #compute error
-        error     = xr - x
+        error     = yr - y
 
         #integral action
         error_sum_new = error_sum + error*self.dt
@@ -116,9 +118,9 @@ class LQRISolver:
     '''
     def _find_ki(self, a, b, c, q, r):
 
-        n = self.a.shape[0]  #system order
-        m = self.b.shape[1]  #inputs count
-        k = self.c.shape[0]  #outputs count
+        n = a.shape[0]  #system order
+        m = b.shape[1]  #inputs count
+        k = c.shape[0]  #outputs count
 
         #matrix augmentation with integral action
         a_aug = numpy.zeros((n+k, n+k))
@@ -130,10 +132,11 @@ class LQRISolver:
 
         b_aug[0:n,0:m]  = b
 
-        q_aug[0:n,0:n]  = 0
-        q_aug[k:,k:]    = q
+        #project Q matric to output, and fill augmented q matrix
+        tmp = (c@q).sum(axis=1)
+        for i in range(k):
+            q_aug[n+i][n+i] = tmp[i]
 
-        
         # continuous-time algebraic Riccati equation solution
         p = scipy.linalg.solve_continuous_are(a_aug, b_aug, q_aug, r)
 

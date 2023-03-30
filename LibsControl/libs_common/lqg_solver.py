@@ -60,29 +60,29 @@ class LQGSolver:
         
         return self.k, self.ki, self.f
     
-    def closed_loop_response(self, xr, steps = 500, noise = 0.0, disturbance = False):
+    def closed_loop_response(self, yr, steps = 500, noise = 0.0, disturbance = False):
         n = self.a.shape[0]  #system order
         m = self.b.shape[1]  #inputs count
         k = self.c.shape[0]  #outputs count
 
         x       = numpy.zeros((n, 1))
 
+
         x_hat   = numpy.zeros((n, 1))
         y       = numpy.zeros((k, 1))
         u       = numpy.zeros((m, 1))
 
-        error_sum = numpy.zeros((n, 1))
+        error_sum = numpy.zeros((k, 1))
 
         u_result        = numpy.zeros((steps, m))
         x_result        = numpy.zeros((steps, n))
         x_hat_result    = numpy.zeros((steps, n))
         y_result        = numpy.zeros((steps, k))
 
-        
         for n in range(steps):
             y_obs  = y + noise*numpy.random.randn(k, 1)
 
-            u, x_hat, error_sum = self.forward(u, xr, y_obs, x_hat, error_sum)
+            u, x_hat, error_sum = self.forward(u, yr, y_obs, x_hat, error_sum)
 
             #apply disturbance
             if disturbance == True and n >= steps//2:
@@ -114,7 +114,7 @@ class LQGSolver:
     
 
 
-    def forward(self, u, xr, y, x_hat, error_sum):
+    def forward(self, u, yr, y, x_hat, error_sum):
         #kalman observer, prediction and correction
         y_hat       = self.c@x_hat
         e           = y - y_hat
@@ -122,7 +122,7 @@ class LQGSolver:
         x_hat_new   = x_hat + dx_hat*self.dt
 
         #compute error  
-        error     = xr - x_hat 
+        error     = yr - y 
  
         #integral action
         error_sum_new = error_sum + error*self.dt
@@ -140,24 +140,26 @@ class LQGSolver:
     '''
     def _find_ki(self, a, b, c, q, r):
 
-        n = self.a.shape[0]  #system order
-        m = self.b.shape[1]  #inputs count
-        k = self.c.shape[0]  #outputs count
+        n = a.shape[0]  #system order
+        m = b.shape[1]  #inputs count
+        k = c.shape[0]  #outputs count
 
         #matrix augmentation with integral action
-        a_aug = numpy.zeros((n+n, n+n))
-        b_aug = numpy.zeros((n+n, m))
-        q_aug = numpy.zeros((n+n, n+n))
+        a_aug = numpy.zeros((n+k, n+k))
+        b_aug = numpy.zeros((n+k, m))
+        q_aug = numpy.zeros((n+k, n+k))
 
         a_aug[0:n, 0:n] = a
-        a_aug[n:, 0:n]  = numpy.eye(n)
+        a_aug[n:, 0:n]  = c
 
         b_aug[0:n,0:m]  = b
 
-        q_aug[0:n,0:n]  = 0
-        q_aug[n:,n:]    = q
+        #project Q matric to output, and fill augmented q matrix
+        tmp = (c@q).sum(axis=1)
+        for i in range(k):
+            q_aug[n+i][n+i] = tmp[i]
 
-        
+
         # continuous-time algebraic Riccati equation solution
         p = scipy.linalg.solve_continuous_are(a_aug, b_aug, q_aug, r)
 

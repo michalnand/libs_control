@@ -2,7 +2,6 @@ import numpy
 import matplotlib.pyplot as plt
 
 
-
 def plot_poles(re_ol, im_ol, re_cl, im_cl, file_name):
     plt.clf()
 
