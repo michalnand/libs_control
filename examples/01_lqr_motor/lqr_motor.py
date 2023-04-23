@@ -8,11 +8,11 @@ if __name__ == "__main__":
     mat_a = numpy.zeros((3, 3))
     mat_b = numpy.zeros((3, 1))
 
-    J = 0.02
-    b = 0.2
-    K = 0.3
-    R = 2.0
-    L = 0.4
+    J = 0.02    #rotor moment of inertia (kg.m^2)
+    b = 0.2     #drag coefficient (N/m/s)
+    K = 0.3     #motor constant (N.m.A^-1)
+    R = 2.0     #wiring resitance, (ohm)
+    L = 0.4     #wiring inductance, (H)
     
     mat_a[0][1] = 1.0
     

@@ -11,7 +11,7 @@ y  = x
 controller : 
 e_int = e_int + (xr - x)d*t
 u = -K@x + Kie_int
-
+ 
 where : 
 N : system order
 M : system inputs count
@@ -73,7 +73,7 @@ class LQRISolver:
     
             #apply disturbance
             if disturbance == True and n >= steps//2:
-                u+= 5 
+                u+= 1 
 
             #system dynamics step
             x     = x + (self.a@x + self.b@u)*self.dt

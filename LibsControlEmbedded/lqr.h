@@ -1,72 +1,85 @@
 #ifndef _LQR_H_
-#ifndef _LQR_H_
+#define _LQR_H_
 
-#include <matmul.h>
+#include <stdint.h>
+#include <mmt.h>
 
-template<unsigned int inputs_count, unsigned int order, class DType>
+template<unsigned int system_order, unsigned int inputs_count>
 class LQR
 {
     public:
         LQR()
         {
-            for (unsigned int i = 0; i < (inputs_count*order); i++)
-            {
-                this->k[i] = 0;
-            }
+            mmt::fill<system_order*inputs_count, float>(this->k,  0);
+            mmt::fill<system_order*inputs_count, float>(this->ki, 0);
 
-            for (unsigned int i = 0; i < inputs_count; i++)
-            {
-                this->g[i] = 0;
-            }
+            mmt::fill<system_order, float>(e_sum, 0);
+            mmt::fill<inputs_count, float>(u, 0);
+        } 
 
-            for (unsigned int i = 0; i < inputs_count; i++)
-            {
-                this->u[i] = 0;
-            }
+        void init(float *k, float *ki, float antiwindup)
+        {
+            mmt::copy<system_order*inputs_count, float>(this->k,  k);
+            mmt::copy<system_order*inputs_count, float>(this->ki, ki);
 
-            for (unsigned int i = 0; i < inputs_count; i++)
-            {
-                this->e[i] = 0;
-            }
+            mmt::fill<system_order, float>(e_sum,   0);
+            mmt::fill<inputs_count, float>(u,       0);
+
+            this->antiwindup = antiwindup;
         }
 
-        virtual ~LQR()
+        float* step(float *xr, float *x, float dt)
         {
+            //compute error and integral action
+            //error = xr - x
+            //error_sum_new = error_sum + error*self.dt
+            mmt::saxpy<inputs_count, float>(error_sum, xr, dt);
+            mmt::saxpy<inputs_count, float>(error_sum, x, -dt);
+                
+            //LQR controll law
+            //u = -self.k@x + self.ki@error_sum_new
+            mmt::mm<inputs_count, system_order, 1, float>(u, k,  x, nullptr,  -1, 0);
+            mmt::mm<inputs_count, system_order, 1, float>(u, ki, x, error_sum, 1, 1);
+ 
+            //antiwindup
+            //error_sum-= (u - u_sat)*dt
+            antiwindup(dt);
+            
+            //return u_sat
+            return u;
+        } 
 
-        }
-
-        void set_k(DType value, unsigned int j, unsigned int i)
+    private:
+        void antiwindup(float dt)
         {
-            this->k[j*order + i] = value;
-        }
-
-        void set_g(DType value, unsigned int j)
-        {
-            this->g[j] = value;
-        }
-
-        DType* forward(DType *xr, DType *x)
-        {
-            //compute scaling and error
-            //e = xr*g - x
             for (unsigned int i = 0; i < inputs_count; i++)
             {
-                this->e[i] = xr[i]*this->g[i] - x[i];
+                float u_    = u[i]
+                float u_sat = u_;
+
+                if (u_sat < -antiwindup)
+                {
+                    u_sat = -antiwindup;
+                }
+
+                if (u_sat > antiwindup)
+                {
+                    u_sat = antiwindup;
+                } 
+
+                error_sum[i]-= (u_ - u_sat)*dt;
+
+                u[i] = u_sat;
             }
-
-            //apply lQR control law
-            //u = k*e
-            mmt<inputs_count, order, 1, DType>(this->u, this->k, this->e, nullptr);
-
-            return this->u;
         }
 
     private:
-        DType   k[inputs_count*order];
-        DType   g[order];
-        
-        DType   u[inputs_count];
-        DType   e[inputs_count];
+        float k[system_order*inputs_count];
+        float ki[system_order*inputs_count];
+        float e_sum[system_order];
+        float u[inputs_count];
+
+        float antiwindup;    
 };
 
 #endif

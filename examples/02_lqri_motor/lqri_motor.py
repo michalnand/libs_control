@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     t_result = numpy.arange(steps)*dt
 
-    q = numpy.array([ [10.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ] )
+    q = numpy.array([ [1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ] )
     r = numpy.array( [ [0.001] ]) 
 
 

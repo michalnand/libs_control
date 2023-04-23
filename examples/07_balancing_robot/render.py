@@ -36,7 +36,7 @@ class Render:
         return 0
 
 
-    def render(self, x_pos, y_pos, theta, scale = 0.005):
+    def render(self, x_pos, y_pos, phi, theta, scale = 0.005):
 
         aspect = self.width/self.height
         glViewport(0, 10, 2*self.width, 2*self.height)

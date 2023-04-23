@@ -66,7 +66,10 @@ class BalancingRobot:
     
     def render(self, y):
         x_pos = y[0][0]
+        y_pos = 0
         theta = y[1][0]*180.0/numpy.pi
+        phi   = 0.0
 
         
-        self.renderer.render(x_pos, 0, theta)
+        
+        self.renderer.render(x_pos, y_pos, phi, theta)
