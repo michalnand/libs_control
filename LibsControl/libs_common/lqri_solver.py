@@ -1,6 +1,5 @@
 import numpy
 import scipy.linalg
-import matplotlib.pyplot as plt
 
 
 '''
@@ -84,18 +83,14 @@ class LQRISolver:
             y_result[n] = y[:, 0]
 
         return u_result, x_result, y_result
-     
-    def get_poles(self):
-        
-        poles_ol = numpy.linalg.eigvals(self.a) + 0j
-        re_ol = poles_ol.real
-        im_ol = poles_ol.imag
+             
+       
+    
 
-        poles_cl = numpy.linalg.eigvals(self.a - self.b@self.k) + 0j
-        re_cl = poles_cl.real
-        im_cl = poles_cl.imag
+    
+    
 
-        return re_ol, im_ol, re_cl, im_cl
+    
     
     def forward(self, yr, y, x, error_sum):
 
