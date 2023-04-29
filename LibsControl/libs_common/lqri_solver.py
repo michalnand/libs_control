@@ -47,6 +47,7 @@ class LQRISolver:
         
     def solve(self):
         self.k, self.ki = self._find_ki(self.a, self.b, self.c, self.q, self.r)
+
         
         return self.k, self.ki
     
@@ -137,6 +138,8 @@ class LQRISolver:
 
         # compute the LQR gain
         ki_tmp =  scipy.linalg.inv(r)@(b_aug.T@p)
+
+        ki_tmp[numpy.abs(ki_tmp) < 10**-10] = 0
 
         #split ki for k and integral action part ki
         k   = ki_tmp[:, 0:a.shape[0]]

@@ -13,7 +13,7 @@ def get_poles(a, b, k):
 
     return re_ol, im_ol, re_cl, im_cl
 
-def get_poles_mesh(a, b, c, step = 0.05):
+def get_poles_mesh(a, b, c, step = 0.04):
 
     poles_ol = numpy.linalg.eigvals(a) + 0j
     re = poles_ol.real
@@ -79,8 +79,10 @@ def plot_poles(re_ol, im_ol, re_cl, im_cl, file_name):
 
 
 def plot_poles_mesh(scale, poles, file_name):
-    cr = poles.mean()*20
-    poles = numpy.clip(poles, 0, cr)
+    #cr = poles.mean()*20
+    #poles = numpy.clip(poles, 0, cr)
+
+    poles = 10*numpy.log(poles + 10**-3)
     
     plt.clf()
 
@@ -99,7 +101,8 @@ def plot_poles_mesh(scale, poles, file_name):
 
 
     ax.set_xlabel("real")
-    ax.set_ylabel("imag")
+    ax.set_ylabel("imag") 
+    ax.set_zlabel("log magnitude [dB]")
 
     plt.tight_layout()
     plt.savefig(file_name, dpi = 300)

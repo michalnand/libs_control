@@ -43,7 +43,7 @@ if __name__ == "__main__":
     print(str(ds))
 
     #plot system open loop step response
-    u_result, x_result, y_result = ds.step_response(amplitudes = 1, steps=steps)
+    u_result, x_result, y_result = ds.step_response(amplitude = 1, steps=steps)
     LibsControl.plot_open_loop_response(t_result, x_result, "results/open_loop_response",  labels = ["x [m]", "dx [m/s]", "theta [deg]", "dtheta [deg/s]"])
 
 
@@ -62,9 +62,15 @@ if __name__ == "__main__":
 
     
     #plot poles, both : open and closed loop
-    re_ol, im_ol, re_cl, im_cl = lqg.get_poles()
     
+    re_ol, im_ol, re_cl, im_cl = LibsControl.get_poles(ds.mat_a, ds.mat_b, k)
     LibsControl.plot_poles(re_ol, im_ol, re_cl, im_cl, "results/poles.png")
+
+    ranges, poles = LibsControl.get_poles_mesh(ds.mat_a, ds.mat_b, ds.mat_c)
+    LibsControl.plot_poles_mesh(ranges, poles, "results/poles_mesh_ol.png")
+
+    ranges, poles = LibsControl.get_poles_mesh(ds.mat_a - ds.mat_b@k, ds.mat_b, ds.mat_c)
+    LibsControl.plot_poles_mesh(ranges, poles, "results/poles_mesh_cl.png")
 
     
     #required state 
