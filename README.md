@@ -1,8 +1,21 @@
 # libs_control
 
-# TODO 
-- embedded LibsControlEmbedded
-- working live aplication in : [brushless motor control](https://github.com/michalnand/brushless_motor_control)
+- linear controllers from scratch
+- based on solving Riccati equation
+- LQR, LQR+integral action, LQG+integral action
+
+# [servo control](examples/02_lqri_motor/)
+
+- 3rd order servo control
+- live example with code for stm32f0 [brushless motor control](https://github.com/michalnand/brushless_motor_control)
+
+ ![diagram](doc/images/brushless_motor.gif)
+
+![diagram](examples/02_lqri_motor/results/closed_loop_response.png)
+
+![diagram](examples/02_lqri_motor/results/poles.png)
+
+![diagram](examples/02_lqri_motor/results/poles_mesh_cl.png)
 
 # [balancing robot](examples/07_balancing_robot/)
 
@@ -40,15 +53,35 @@
 
 ![diagram](doc/diagrams/control-lqr.png)
 
+basic minimal tutorial for 2nd order servo : 
+[01_lqr_servo.ipynb](tutorials/01_lqr_servo.ipynb)
+
+
+
 # LQR with integral action controller
 
 - completly removes any constant disturbance
 
 ![diagram](doc/diagrams/control-lqri.png)
 
+
+basic minimal tutorial for 2nd order servo : 
+[02_lqr_integral_action_servo.ipynb](tutorials/02_lqr_integral_action_servo.ipynb)
+
+
 # LQG controller
 
 - dont require observing fully state
+- uses Kalman filter to estimate x, from y, and u, and also provides denoising
 
 ![diagram](doc/diagrams/control-lqg.png)
 
+basic minimal tutorial for 2nd order servo : 
+[03_lqg_servo.ipynb](tutorials/03_lqg_servo.ipynb)
+
+
+# TODO 
+- embedded LibsControlEmbedded - not done
+- working live aplication : [brushless motor control](https://github.com/michalnand/brushless_motor_control)
+
+- MPC
