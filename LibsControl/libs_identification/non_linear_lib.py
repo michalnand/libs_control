@@ -17,7 +17,7 @@ def polynomial_augmentation(x):
         for i in range(features_count):
             v       = x[:, j]*x[:, i]
             ptr =  j*features_count + i
-            result[:, ptr] = v
+            result[:, ptr] = v 
 
     return result
             
@@ -27,7 +27,6 @@ def rotation_augmentation(x):
     features_count  = x.shape[1]
 
     result          = numpy.zeros((batch_size,  2*features_count*features_count), dtype=numpy.float32)
-    result[:, 0:features_count] = x
 
     for j in range(features_count):
         for i in range(features_count):
