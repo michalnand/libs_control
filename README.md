@@ -80,6 +80,14 @@ basic minimal tutorial for 2nd order servo :
 [03_lqg_servo.ipynb](tutorials/03_lqg_servo.ipynb)
 
 
+# sparse model identification
+
+![model_matrix](examples/08_identification/images/sparse_model.gif)
+
+[04_sparse_model_identification.ipynb](tutorials/04_sparse_model_identification.ipynb)
+
+
+
 # TODO 
 - embedded LibsControlEmbedded - not done
 - working live aplication : [brushless motor control](https://github.com/michalnand/brushless_motor_control)
