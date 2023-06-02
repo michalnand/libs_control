@@ -127,7 +127,7 @@ if __name__ == "__main__":
     dims    = 1
 
     pz      = 0.1
-    pdz     = 0.00001
+    pdz     = 0.01
 
     dt      = 1.0
 
@@ -147,7 +147,11 @@ if __name__ == "__main__":
 
     for i in range(n):
        
-        z_true = 1.0
+
+        if (i+1)%200 == 0:
+            dz_true*= -1
+
+        z_true+= dz_true
 
         z   = z_true    + (pz**0.5)*torch.randn(dims)
 

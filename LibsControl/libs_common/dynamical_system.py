@@ -66,9 +66,6 @@ class DynamicalSystem:
         u        = amplitude*numpy.ones((self.mat_b.shape[1], 1))
         
 
-        print("u = ", u)
-
-
         u_result = numpy.zeros((steps, self.mat_b.shape[1]))
         x_result = numpy.zeros((steps, self.mat_a.shape[0]))
         y_result = numpy.zeros((steps, self.mat_c.shape[0]))
