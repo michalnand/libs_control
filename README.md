@@ -20,12 +20,12 @@
 # [balancing robot](examples/07_balancing_robot/)
 
 - classical inverted pendulum problem
-- goal is to control angle and position
+- goal is to control angle, position and steering
 
  
-![diagram](doc/images/balacing_robot.gif)
+![diagram](doc/images/balancing_robot_2.gif)
 
-![diagram](examples/07_balancing_robot/results/closed_loop_response_observed.png)
+![diagram](examples/07_balancing_robot/results/closed_loop_response.png)
 
 ![diagram](examples/07_balancing_robot/results/poles.png)
 
