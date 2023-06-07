@@ -22,9 +22,6 @@ def identification(u, x, dt, steps_count=20, augmentations = []):
         w_aug_tmp   = augmentations[i](w)
         w_aug       = numpy.hstack([w_aug, w_aug_tmp])
     
-   
-
- 
     solver             = SparseSolver()
     _, thetas, loss    = solver.solve(dx, w_aug, steps_count)
 

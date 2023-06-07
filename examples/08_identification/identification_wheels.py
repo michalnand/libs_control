@@ -68,13 +68,21 @@ if __name__ == "__main__":
 
     x = numpy.zeros((mat_a.shape[0], 1))
 
+    x_idx = [0, 2]
+    u_idx = [0, 1] 
+    x_amp = [1.0, 1.0] 
+    u_amp = [1.0, 1.0]
 
-    u    = numpy.zeros((mat_b.shape[1], 1))
+    relay_control = LibsControl.Relay(x_idx, u_idx, x_amp, u_amp)
+
+    #u    = numpy.zeros((mat_b.shape[1], 1))
 
     for i in range(steps):  
         
-        if i%200 == 0:
-            u    = numpy.random.rand(mat_b.shape[1], 1)
+        #if i%200 == 0:
+        #    u    = numpy.random.rand(mat_b.shape[1], 1)
+
+        u = relay_control.step(x)
         
         u_batch.append(u[:, 0])
         x_batch.append(x[:, 0])
@@ -87,13 +95,18 @@ if __name__ == "__main__":
     u_batch = numpy.array(u_batch)
     x_batch = numpy.array(x_batch)
 
-    x_batch+= 0.00001*numpy.random.randn(x_batch.shape[0], x_batch.shape[1])
+    x_batch+= 0.001*numpy.random.randn(x_batch.shape[0], x_batch.shape[1])
 
 
-    a_hat, b_hat = LibsControl.identification(u_batch, x_batch, dt)
+    models, loss = LibsControl.identification(u_batch, x_batch, dt)
 
+    model = models[7]
+
+    ab      = model.T
+    order   = x_batch.shape[1]
+    a_hat = ab[:, 0:order]
+    b_hat = ab[:, order:]
     
-    #a_hat, b_hat = LibsControl.identification_cont(u_batch, x_batch, dt)
 
     print("ground truth")
     print(numpy.round(ds.mat_a, 3))
@@ -103,4 +116,7 @@ if __name__ == "__main__":
     print("model")
     print(numpy.round(a_hat, 3))
     print(numpy.round(b_hat, 3))
+
+    print("\n")
+    print("loss = ", loss)
     

@@ -63,7 +63,12 @@ class DynamicalSystem:
 
     def step_response(self, amplitude, steps = 1000):
         x        = numpy.zeros((self.mat_a.shape[1], 1))
-        u        = amplitude*numpy.ones((self.mat_b.shape[1], 1))
+
+        amplitudes = numpy.array(amplitude)
+        amplitudes = numpy.expand_dims(amplitudes, 1)
+        u        = amplitudes*numpy.ones((self.mat_b.shape[1], 1))
+
+        print(u)
         
 
         u_result = numpy.zeros((steps, self.mat_b.shape[1]))
