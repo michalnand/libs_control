@@ -7,6 +7,22 @@ def const_augmentation(x):
     return result
 
 
+def polynome_augmentation(x, max_order):
+    batch_size      = x.shape[0]
+    features_count  = x.shape[1]
+
+    max_order       = max_order + 1
+
+    result          = numpy.zeros((batch_size,  features_count*max_order), dtype=numpy.float32)
+
+    for i in range(max_order):
+        v       = x**i
+
+        ptr = i*features_count
+        result[:, ptr:ptr+features_count] = v[:, :]
+
+    return result
+
 def polynomial_augmentation(x):
     batch_size      = x.shape[0]
     features_count  = x.shape[1]

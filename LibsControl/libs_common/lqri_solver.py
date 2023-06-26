@@ -44,6 +44,14 @@ class LQRISolver:
         self.r = r
 
         self.dt= dt
+
+    def copy(self):
+        result = LQRISolver(self.a, self.b, self.c, self.q, self.r, self.dt)
+
+        result.k  = self.k.copy()
+        result.ki = self.ki.copy()
+
+        return result
         
     def solve(self):
         self.k, self.ki = self._find_ki(self.a, self.b, self.c, self.q, self.r)

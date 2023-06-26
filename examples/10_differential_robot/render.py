@@ -16,6 +16,8 @@ class Render:
 
         res = self._create_window(self.height, self.width)
         print("init res = ", res)
+
+        self.path = []
         
     def _create_window(self, height, width, label = "visualisation"):
 
@@ -47,6 +49,11 @@ class Render:
 
 
     def render(self, x_pos, y_pos, theta, target_x_pos, target_y_pos):
+
+        self.path.append([x_pos, y_pos])
+
+        if len(self.path) > 100:
+            self.path = self.path[1:]
 
         '''
         #glViewport(-1, -1, 2*self.width, 2*self.height)
@@ -150,6 +157,22 @@ class Render:
         glColor3f(0.4, 0.0, 1.0)
         self.paint_circle(r)
         glPopMatrix()
+
+        glPopMatrix()
+
+        glPushMatrix()
+        glBegin(GL_LINES)
+
+        glColor3f(1.0, 0.0, 0.0)
+        for j in range(len(self.path) - 1):
+            x0 = self.path[j][0]
+            y0 = self.path[j][1]
+            x1 = self.path[j+1][0]
+            y1 = self.path[j+1][1]
+            glVertex3f(x0,  r, -y0)
+            glVertex3f(x1,  r, -y1)
+
+        glEnd()
 
         glPopMatrix()
 

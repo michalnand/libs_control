@@ -80,6 +80,6 @@ class DifferentialRobot:
 
     
     def render(self, target_x_pos, target_y_pos):
-
+        
         
         self.renderer.render(self.x_pos, self.y_pos, self.theta, target_x_pos, target_y_pos)
