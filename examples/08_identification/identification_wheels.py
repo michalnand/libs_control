@@ -95,8 +95,8 @@ if __name__ == "__main__":
     u_batch = numpy.array(u_batch)
     x_batch = numpy.array(x_batch)
 
-    x_batch+= 0.001*numpy.random.randn(x_batch.shape[0], x_batch.shape[1])
-
+    #x_batch+= 0.001*numpy.random.randn(x_batch.shape[0], x_batch.shape[1])
+ 
 
     models, loss = LibsControl.identification(u_batch, x_batch, dt)
 

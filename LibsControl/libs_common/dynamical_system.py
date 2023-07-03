@@ -1,6 +1,9 @@
 import numpy
 import matplotlib.pyplot as plt
 
+
+from .ode_solver import *
+
 '''
 creates discrete dynamical system from 
 continuous model
@@ -55,11 +58,22 @@ class DynamicalSystem:
 
         return result
 
-    def forward(self, x, u):        
+    def forward(self, x, u):  
+        x_new, y = ODESolverRK4(self._step, x, u, self.dt)      
+        #x_new, y = ODESolverEuler(self._step, x, u, self.dt)      
+
         x_new   = x + (self.mat_a@x + self.mat_b@u)*self.dt
         y       = self.mat_c@x_new
 
         return x_new, y
+    
+
+    def _step(self, x, u):
+        dx   = self.mat_a@x + self.mat_b@u
+        y    = self.mat_c@x
+
+        return dx, y
+  
 
     def step_response(self, amplitude, steps = 1000):
         x        = numpy.zeros((self.mat_a.shape[1], 1))
