@@ -18,7 +18,7 @@ def ODESolverRK4(dynamical_system, x, u, dt = 0.001):
     k3, y3  = dynamical_system(x + 0.5*k2, u + 0.5*dt)
     k3      = k3*dt
 
-    k4, y4  = dynamical_system(x + k3    , u + dt)
+    k4, y4  = dynamical_system(x + k3, u + dt)
     k4      = k4*dt
 
     x_new   = x + (1.0/6.0)*(1.0*k1 + 2.0*k2 + 2.0*k3 + 1.0*k4)

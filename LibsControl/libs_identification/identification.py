@@ -53,16 +53,25 @@ x : servo position, shape (steps, 1)
 '''
 def servo_identification(u, x, dt):
 
-
     '''
-    u    = u[7:]   
-    v    = first_difference_6(x, dt)[1:, :]
-    acc  = second_difference_6(x, dt)
-    '''
-    
     u    = u[2:, :]
     v    = first_difference_1(x, dt)[1:, :]
     acc  = second_difference_1(x, dt)
+    
+
+
+    w   = numpy.hstack([v, u])
+
+    #solve model
+    theta = numpy.linalg.lstsq(w, acc, rcond=None)[0]
+
+    a = theta[0][0]
+    b = theta[1][0]
+    '''
+
+
+    u    = u[2:, :]
+    v    = first_difference_1(x, dt)[1:, :]
     
 
 

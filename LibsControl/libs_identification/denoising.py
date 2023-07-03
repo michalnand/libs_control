@@ -1,6 +1,26 @@
 import torch
 import numpy
 
+
+def fft_denoising(x, alpha):
+
+    y_result = x.copy()
+
+    print(">>> fft_denoising ", y_result.shape)
+    for ch in range(y_result.shape[1]):
+        s   = numpy.fft.fft(x[:, ch])
+        amp = numpy.absolute(s)
+        s[amp < alpha[ch]] = 0.0
+
+        y   = numpy.fft.ifft(s)
+        y   = numpy.real(y)
+
+        y_result[:, ch] = y 
+
+
+    return y_result
+
+
 def denoising(x, alpha = 1.0, steps = 100):
 
     x_t = torch.from_numpy(x).float()
@@ -26,6 +46,7 @@ def denoising(x, alpha = 1.0, steps = 100):
         optimizer.step()
 
     return x_denoised_t.detach().cpu().numpy()
+
 
 
 def smoothing(x, alpha = 0.1):

@@ -59,8 +59,8 @@ class DynamicalSystem:
         return result
 
     def forward(self, x, u):  
-        x_new, y = ODESolverRK4(self._step, x, u, self.dt)      
         #x_new, y = ODESolverEuler(self._step, x, u, self.dt)      
+        x_new, y = ODESolverRK4(self._step, x, u, self.dt)      
 
         x_new   = x + (self.mat_a@x + self.mat_b@u)*self.dt
         y       = self.mat_c@x_new
