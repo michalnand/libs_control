@@ -6,10 +6,12 @@ def fft_denoising(x, alpha):
 
     y_result = x.copy()
 
-    print(">>> fft_denoising ", y_result.shape)
+    fft_result = numpy.zeros_like(x)
+
     for ch in range(y_result.shape[1]):
         s   = numpy.fft.fft(x[:, ch])
         amp = numpy.absolute(s)
+        fft_result[:, ch] = amp.copy()
         s[amp < alpha[ch]] = 0.0
 
         y   = numpy.fft.ifft(s)
@@ -18,7 +20,8 @@ def fft_denoising(x, alpha):
         y_result[:, ch] = y 
 
 
-    return y_result
+
+    return y_result, fft_result
 
 
 def denoising(x, alpha = 1.0, steps = 100):

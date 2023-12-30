@@ -81,8 +81,6 @@ class DynamicalSystem:
         amplitudes = numpy.array(amplitude)
         amplitudes = numpy.expand_dims(amplitudes, 1)
         u        = amplitudes*numpy.ones((self.mat_b.shape[1], 1))
-
-        print(u)
         
 
         u_result = numpy.zeros((steps, self.mat_b.shape[1]))
