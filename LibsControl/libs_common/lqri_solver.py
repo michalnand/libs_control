@@ -93,14 +93,7 @@ class LQRISolver:
 
         return u_result, x_result, y_result
              
-       
-    
 
-    
-    
-
-    
-    
     def forward(self, yr, y, x, error_sum):
 
         #compute error
