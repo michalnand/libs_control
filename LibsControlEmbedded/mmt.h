@@ -172,6 +172,31 @@ namespace mmt
             }
     }
 
+
+
+    //2x2 matrix inversion
+    template<unsigned int M, unsigned int N, class DType>
+    int mm_inv_2x2(DType *y, DType *x) 
+    {
+        float det = x[0*N + 0] * x[1*N + 1] - x[0*N + 1] * x[1*N + 0];
+
+        if (det != 0) 
+        {
+            float inv_det = 1.0/det;
+
+            y[0*N + 0] = x[1*N + 1] * inv_det;
+            y[0*N + 1] = -x[0*N + 1] * inv_det;
+            y[1*N + 0] = -x[1*N + 0] * inv_det;
+            y[1*N + 1] = x[0*N + 0] * inv_det;
+
+            return 0;
+        } 
+        else 
+        {
+           return -1;
+        }
+    }
+    
 }
 
 #endif

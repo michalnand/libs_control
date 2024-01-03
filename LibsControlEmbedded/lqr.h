@@ -1,85 +1,155 @@
 #ifndef _LQR_H_
 #define _LQR_H_
 
-#include <stdint.h>
-#include <mmt.h>
+/*
+k=
+ [[ 0.93947  7.54465  7.5173  37.63855]
+ [-0.93947 -7.54465  7.5173  37.63855]] 
 
-template<unsigned int system_order, unsigned int inputs_count>
+ki=
+ [[  0.       22.36068   0.       70.71068]
+ [  0.      -22.36068   0.       70.71068]] 
+*/
+
+template <unsigned int outputs_count, unsigned int system_order>
 class LQR
-{
+{   
     public:
         LQR()
         {
-            mmt::fill<system_order*inputs_count, float>(this->k,  0);
-            mmt::fill<system_order*inputs_count, float>(this->ki, 0);
 
-            mmt::fill<system_order, float>(e_sum, 0);
-            mmt::fill<inputs_count, float>(u, 0);
+        }
+
+        virtual ~LQR()
+        {
+
         } 
 
-        void init(float *k, float *ki, float antiwindup)
+        void init(float *k, float *ki, float antiwindup, float dt)
         {
-            mmt::copy<system_order*inputs_count, float>(this->k,  k);
-            mmt::copy<system_order*inputs_count, float>(this->ki, ki);
+            for (unsigned int j = 0; j < outputs_count*system_order; j++)
+            {
+                this->k[j] = k[j];
+            }
 
-            mmt::fill<system_order, float>(e_sum,   0);
-            mmt::fill<inputs_count, float>(u,       0);
+            for (unsigned int j = 0; j < outputs_count*system_order; j++)
+            {
+                this->ki[j] = ki[j];
+            }
+           
+            for (unsigned int j = 0; j < outputs_count; j++)
+            {
+                this->integral_action[j] = 0.0;
+            }
+
+            for (unsigned int j = 0; j < outputs_count; j++)
+            {
+                this->u[j] = 0.0;
+            }
 
             this->antiwindup = antiwindup;
+            this->dt         = dt;
         }
 
-        float* step(float *xr, float *x, float dt)
+        void step()
         {
-            //compute error and integral action
+            //integral action
             //error = xr - x
-            //error_sum_new = error_sum + error*self.dt
-            mmt::saxpy<inputs_count, float>(error_sum, xr, dt);
-            mmt::saxpy<inputs_count, float>(error_sum, x, -dt);
-                
-            //LQR controll law
-            //u = -self.k@x + self.ki@error_sum_new
-            mmt::mm<inputs_count, system_order, 1, float>(u, k,  x, nullptr,  -1, 0);
-            mmt::mm<inputs_count, system_order, 1, float>(u, ki, x, error_sum, 1, 1);
- 
-            //antiwindup
-            //error_sum-= (u - u_sat)*dt
-            antiwindup(dt);
-            
-            //return u_sat
-            return u;
-        } 
+            //integral_action+= ki@error * dt
+            float integral_action_new[outputs_count];
 
-    private:
-        void antiwindup(float dt)
-        {
-            for (unsigned int i = 0; i < inputs_count; i++)
+            for (unsigned int j = 0; j < outputs_count; j++)
             {
-                float u_    = u[i]
-                float u_sat = u_;
-
-                if (u_sat < -antiwindup)
+                float sum = 0.0;
+                for (unsigned int i = 0; i < system_order; i++)
                 {
-                    u_sat = -antiwindup;
+                    float error = this->xr[i] - this->x[i]; 
+                    sum+= this->ki[j*system_order + i]*error;
                 }
 
-                if (u_sat > antiwindup)
+                integral_action_new[j] = this->integral_action[j] + sum*this->dt;
+            } 
+            
+
+            //LQR controller with integral action
+            //u = -k@x + ki@error_sum
+            for (unsigned int j = 0; j < outputs_count; j++)
+            {
+                //control law
+                float u_sum = 0.0;
+                for (unsigned int i = 0; i < system_order; i++)
                 {
-                    u_sat = antiwindup;
-                } 
+                    u_sum+= -this->x[i]*this->k[j*system_order + i] + this->integral_action[j];
+                }
+                
+                //antiwindup with conditional integration
+                this->u[j] = _clip(u_sum, -antiwindup, antiwindup);
+            }   
 
-                error_sum[i]-= (u_ - u_sat)*dt;
+            bool antiwindup = false;
 
-                u[i] = u_sat;
+            for (unsigned int j = 0; j < outputs_count; j++)
+                if (_abs(u_sum - this->u[j]) > 10e-10)
+                {
+                    antiwindup = true;
+                }
+
+            if (antiwindup == false)
+            {   
+                for (unsigned int j = 0; j < outputs_count; j++)
+                {
+                    this->integral_action[j] = integral_action_new[j];
+                }
             }
+                
         }
 
-    private:
-        float k[system_order*inputs_count];
-        float ki[system_order*inputs_count];
-        float e_sum[system_order];
-        float u[inputs_count];
 
-        float antiwindup;    
+    private:
+        float _abs(float v)
+        {
+            if (v < 0)
+            {
+                v = -v;
+            }
+
+            return v;
+        }
+
+        float _clip(float v, float min_v, float max_v)
+        {
+            if (v < min_v)
+            {
+                v = min_v;
+            }
+            else if (v > max_v)
+            {
+                v = max_v;
+            }
+
+            return v;
+        }
+
+
+    public:
+        float k[outputs_count*system_order];
+        float ki[outputs_count*system_order];
+
+        float dt;
+        float antiwindup;
+
+    public:
+        float integral_action[outputs_count];
+
+    public:
+        //required state
+        float xr[system_order];
+
+        //system state
+        float x[system_order];
+        
+        //controller output
+        float u[outputs_count];
 };
 
 #endif
