@@ -63,7 +63,7 @@ if __name__ == "__main__":
     x = numpy.zeros((disc_mat_a.shape[0], 1))
     
     u = numpy.zeros((n_inputs, 1))
-    for n in range(1000):
+    for n in range(10000):
         
         if numpy.random.rand() < 0.1:
             u = numpy.random.randint(0, 3, (n_inputs, 1))-1
@@ -80,12 +80,28 @@ if __name__ == "__main__":
     x_log = numpy.array(x_log)
     u_log = numpy.array(u_log)
 
-    #x_log+= 0.1*numpy.random.randn(x_log.shape[0], x_log.shape[1])
+    noise_level = 0.01
+    x_log+= noise_level*numpy.random.randn(x_log.shape[0], x_log.shape[1])
 
-    mat_a_hat, mat_b_hat = LibsControl.recurisve_ls_identification(u_log, x_log)    
+    mat_a_hat, mat_b_hat = LibsControl.recurisve_ls_identification(u_log, x_log) 
+
+    print("predicted model \n")
+    print(numpy.round(mat_a_hat, 4))
+    print()
+    print(numpy.round(mat_b_hat, 4))
+    print("\n")  
+    print("error = ", ((disc_mat_a - mat_a_hat)**2).mean() + ((disc_mat_b - mat_b_hat)**2).mean() )
+    print("\n\n")
+
+    R = numpy.eye(mat_a.shape[0])*noise_level
+    Q = numpy.zeros((mat_a.shape[0] + mat_b.shape[1], mat_a.shape[0] + mat_b.shape[1]))
+
+    mat_a_hat, mat_b_hat = LibsControl.recurisve_kalman_ls_identification(u_log, x_log, R, Q)    
 
     print("predicted model \n")
     print(numpy.round(mat_a_hat, 4))
     print()
     print(numpy.round(mat_b_hat, 4))
     print("\n")
+    print("error = ", ((disc_mat_a - mat_a_hat)**2).mean() + ((disc_mat_b - mat_b_hat)**2).mean() )
+    print("\n\n")

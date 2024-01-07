@@ -31,11 +31,21 @@ class AdpativeMPC:
 
         #TODO : do we need matrix a, b, q augmentations for integral action ?
         #compute optimal control for given u
-        q_inv = numpy.inv(self.q)
-        u = numpy.linalg.inv(b) @ numpy.linalg.inv(a.T@q_inv@a) @ (a@x - xr)
+        #q_inv = numpy.inv(self.q)
+        #u = numpy.linalg.inv(b) @ numpy.linalg.inv(a.T@q_inv@a) @ (a@x - xr)
+    
+        #riccati DARE solving
+        p_new = self.q + a.T @ self.p @ a - a.T @ self.p @ b @ numpy.linalg.inv(self.r + b.T @ self.p @ b) @ b.T @ self.P @ a
 
-        self.u_prev = u.copy() 
-        self.x_prev = x.copy()
+        ki_tmp = numpy.linalg.inv(self.r)@(b.T@self.p)
+
+        ki_tmp[numpy.abs(ki_tmp) < 10**-10] = 0
+
+        #split ki for k and integral action part ki
+        k   = ki_tmp[:, 0:a.shape[0]]
+        ki  = ki_tmp[:, a.shape[0]:]
+
+        u = - k@x + ki@error_sum
 
         return u
 
