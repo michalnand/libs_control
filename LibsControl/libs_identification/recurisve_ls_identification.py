@@ -108,7 +108,6 @@ def recurisve_kalman_ls_identification(u, x, R, Q):
 
         # Kalman gain    
         #denom = (lambda_val + extended_x.T@P@extended_x).item()
-        tmp = x_prev.T @ R @ x_prev
         denom = (lambda_val + extended_x.T @ P @ extended_x + x_prev.T @ R @ x_prev).item()
 
         if numpy.abs(denom) > 10e-4 and numpy.abs(denom) < 10e3:
