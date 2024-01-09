@@ -97,7 +97,7 @@ class KalmanFilter:
         self.x_hat = self.x_hat + kx*(x - self.x_hat)
         self.v_hat = self.v_hat + kv*(v - self.v_hat)
         self.px = (1.0 - kx)*self.px
-        self.pv = (1.0 - kx)*self.pv
+        self.pv = (1.0 - kv)*self.pv
 
         return self.x_hat, self.v_hat
 
@@ -114,8 +114,8 @@ if __name__ == "__main__":
     z_prev = numpy.zeros(2)
 
   
-    kalman_x = KalmanFilter(noise_var, noise_var, q = 0.0001)
-    kalman_y = KalmanFilter(noise_var, noise_var, q = 0.0001)
+    kalman_x = KalmanFilter(noise_var, 2*noise_var, q = 10**-4)
+    kalman_y = KalmanFilter(noise_var, 2*noise_var, q = 10**-4)
     
     line_max = 20
     line_gt = []
