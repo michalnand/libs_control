@@ -43,7 +43,7 @@ if __name__ == "__main__":
     print(str(ds))
 
     #plot system open loop step response
-    u_result, x_result, y_result = ds.step_response(amplitude = 1, steps=steps)
+    u_result, x_result, y_result = ds.step_response(amplitudes = [1, 1], steps=steps)
     LibsControl.plot_open_loop_response(t_result, x_result, "results/open_loop_response",  labels = ["x [m]", "dx [m/s]", "theta [deg]", "dtheta [deg/s]"])
 
 

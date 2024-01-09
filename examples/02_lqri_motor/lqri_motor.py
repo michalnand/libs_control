@@ -41,12 +41,12 @@ if __name__ == "__main__":
 
 
     #plot system open loop step response
-    u_result, x_result, y_result = ds.step_response(amplitude = 1.0, steps=10000)
+    u_result, x_result, y_result = ds.step_response(amplitudes = [1.0], steps=10000)
     LibsControl.plot_open_loop_response(t_result, y_result, "results/open_loop_response", labels=["angle", "angular velocity", "current"])
 
 
     
-    lqri = LibsControl.LQRISolver(ds.mat_a, ds.mat_b, ds.mat_c, q, r, dt)
+    lqri = LibsControl.LQRISolver(ds.mat_a, ds.mat_b, q, r, dt)
 
     k, ki    = lqri.solve()
 
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     xr = numpy.array([[100.0*numpy.pi/180.0, 0.0, 0.0]]).T
 
     #step response
-    u_result, x_result, y_result, = lqri.closed_loop_response(xr, steps, disturbance = True)
+    u_result, x_result = lqri.closed_loop_response(xr, steps, disturbance = True)
 
     x_result[:, 0]*= 180.0/numpy.pi
     x_result[:, 1]*= 60.0/(2.0*numpy.pi)

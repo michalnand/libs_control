@@ -43,7 +43,6 @@ class BalancingRobot:
 
 
         self.mat_a[4][5] =  1.0
-        self.mat_a[5][5] =  -20.0
         #self.mat_a[5] = 0.1*numpy.random.randn(6)
         
 

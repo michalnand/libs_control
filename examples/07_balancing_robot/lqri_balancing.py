@@ -17,11 +17,11 @@ if __name__ == "__main__":
     
     
 
-    q = [1.0, 0.0, 0.001, 0.0, 0.1, 0.0]
+    q = [1.0, 0.0, 0.001, 0.0, 1.0, 0.0]
     q = numpy.diag(q)
 
     
-    r = [0.001, 0.001] 
+    r = [0.1, 0.1] 
     r =  numpy.diag(r)
 
 
@@ -30,12 +30,12 @@ if __name__ == "__main__":
     print(str(ds))
 
     #plot system open loop step response
-    u_result, x_result, y_result = ds.step_response(amplitude = 1, steps=steps)
+    u_result, x_result, y_result = ds.step_response(amplitudes = [1, 1], steps=steps)
     LibsControl.plot_open_loop_response(t_result, x_result, "results/open_loop_response",  labels = ["x [m]", "dx [m/s]", "theta [deg]", "dtheta [deg/s]", "phi [deg]", "dphi [deg]"])
 
 
     
-    lqri     = LibsControl.LQRISolver(ds.mat_a, ds.mat_b, ds.mat_c, q, r, dt)
+    lqri     = LibsControl.LQRISolver(ds.mat_a, ds.mat_b, q, r, dt)
 
     k, ki    = lqri.solve() 
 
@@ -61,10 +61,10 @@ if __name__ == "__main__":
     '''
     
     #required state 
-    yr = numpy.array([[1.0, 0.0, 100.0*numpy.pi/180.0]]).T
+    xr = numpy.array([[1.0, 0.0, 100.0*numpy.pi/180.0, 0.0, 0.0, 0.0]]).T
 
     #step response
-    u_result, x_result, y_result = lqri.closed_loop_response(yr, steps, noise = 0, disturbance = True)
+    u_result, x_result = lqri.closed_loop_response(xr, steps, noise = 0, disturbance = True)
 
     x_result[:, 2]*= 180.0/numpy.pi
     x_result[:, 3]*= 180.0/numpy.pi
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     
     n = model.mat_a.shape[0]  #system order
     m = model.mat_b.shape[1]  #inputs count
-    k = model.mat_c.shape[0]  #outputs count
+    k = model.mat_a.shape[0]  #outputs count
 
 
     x       = numpy.zeros((n, 1))
@@ -114,7 +114,13 @@ if __name__ == "__main__":
         elif m == 9:
             yr = numpy.array([[-0.8, 0.0, 0.0]]).T
 
-        u, error_sum = lqri.forward(yr, y, x, error_sum)
+        xr = numpy.zeros((6, 1))
+
+        xr[0, 0] = yr[0, 0]
+        xr[2, 0] = yr[1, 0]
+        xr[4, 0] = yr[2, 0]
+
+        u, error_sum = lqri.forward(xr, x, error_sum)
                  
         x, y = model.forward(x, u)
 

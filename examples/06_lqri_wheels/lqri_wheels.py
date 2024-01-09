@@ -77,12 +77,12 @@ if __name__ == "__main__":
     print(str(ds))
 
     #plot system open loop step response
-    u_result, x_result, y_result = ds.step_response(amplitude = 1, steps=steps)
+    u_result, x_result, y_result = ds.step_response(amplitudes = [1, 1], steps=steps)
     LibsControl.plot_open_loop_response(t_result, x_result, "results/open_loop_response", ["disc A [rad]", "disc B [rad]", "disc C [rad]", "disc A [rad/s]", "disc B [rad/s]", "disc C [rad/s]"])
 
 
  
-    lqri     = LibsControl.LQRISolver(ds.mat_a, ds.mat_b, ds.mat_c, q, r, dt)
+    lqri     = LibsControl.LQRISolver(ds.mat_a, ds.mat_b, q, r, dt)
 
     k, ki    = lqri.solve()
 
@@ -109,7 +109,7 @@ if __name__ == "__main__":
     xr = numpy.array([[1.0, 1.0, 1.0, 0.0, 0.0, 0.0]]).T
 
     #step response
-    u_result, x_result, y_result = lqri.closed_loop_response(xr, steps, noise = noise, disturbance = True)
+    u_result, x_result = lqri.closed_loop_response(xr, steps, noise = noise, disturbance = True)
 
     LibsControl.plot_closed_loop_response(t_result, u_result, x_result, file_name = "results/closed_loop_response.png", u_labels = ["motor A", "motor B"], x_labels = ["disc A [rad]", "disc B [rad]", "disc C [rad]", "disc A [rad/s]", "disc B [rad/s]", "disc C [rad/s]"] )
     
