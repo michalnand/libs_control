@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
 
     
-    lqri     = LibsControl.LQRISolver(ds.mat_a, ds.mat_b, ds.mat_c, q, r, dt)
+    lqri     = LibsControl.LQRISolver(ds.mat_a, ds.mat_b, q, r, dt)
 
     k, ki    = lqri.solve() 
 
@@ -84,10 +84,10 @@ if __name__ == "__main__":
     
     
     #required state 
-    yr = numpy.array([[0.0, 90.0*numpy.pi/180.0, 0.0, 1.0]]).T
+    xr = numpy.array([[0.0, 90.0*numpy.pi/180.0, 0.0, 1.0]]).T
 
     #step response
-    u_result, x_result, y_result = lqri.closed_loop_response(yr, steps, noise = 0, disturbance = True)
+    u_result, x_result = lqri.closed_loop_response(xr, steps, noise = 0, disturbance = True)
 
     x_result[:, 0]*= 180.0/numpy.pi
     x_result[:, 1]*= 180.0/numpy.pi
@@ -126,9 +126,9 @@ if __name__ == "__main__":
         d_distance = 1.5*d_distance
 
        
-        yr = numpy.array([[0.0, x[1, 0] + d_theta, 0.0,  x[3, 0] + d_distance]]).T
+        xr = numpy.array([[0.0, x[1, 0] + d_theta, 0.0,  x[3, 0] + d_distance]]).T
 
-        u, error_sum = lqri.forward(yr, y, x, error_sum)
+        u, error_sum = lqri.forward(xr, x, error_sum)
                  
         x, y = model.forward(x, u)
 

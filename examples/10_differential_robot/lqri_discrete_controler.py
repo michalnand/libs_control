@@ -38,7 +38,7 @@ if __name__ == "__main__":
     t_result = numpy.arange(steps)*dt
     
     
-    q = [0.0, 1.0, 0.0, 1.0]
+    q = [0.0, 0.1, 0.0, 0.1]
     q = numpy.diag(q)
 
     

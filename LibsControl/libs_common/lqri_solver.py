@@ -34,36 +34,26 @@ Ki : computed gain matrix for integral acttion, NxM
 '''
 class LQRISolver:
 
-    def __init__(self, a, b, c, q, r, dt):
+    def __init__(self, a, b, q, r, dt):
 
         self.a = a
         self.b = b
-        self.c = c
 
         self.q = q
         self.r = r
 
         self.dt= dt
 
-    def copy(self):
-        result = LQRISolver(self.a, self.b, self.c, self.q, self.r, self.dt)
-
-        result.k  = self.k.copy()
-        result.ki = self.ki.copy()
-
-        return result
         
     def solve(self):
-        self.k, self.ki = self._find_ki(self.a, self.b, self.c, self.q, self.r)
-
-        
+        self.k, self.ki = self._find_ki(self.a, self.b, self.q, self.r)
         return self.k, self.ki
     
-    def closed_loop_response(self, yr, steps = 500, noise = 0.0, disturbance = False):
+    def closed_loop_response(self, xr, steps = 500, noise = 0.0, disturbance = False):
 
         n = self.a.shape[0]  #system order
         m = self.b.shape[1]  #inputs count
-        k = self.c.shape[0]  #outputs count
+        k = self.a.shape[0]  #outputs count
 
 
         u_result = numpy.zeros((steps, m))
@@ -75,9 +65,8 @@ class LQRISolver:
 
         for n in range(steps):
             x_obs       = x + noise*numpy.random.randn(x.shape[0], x.shape[1])
-            y_obs       = self.c@x_obs
 
-            u, error_sum = self.forward(yr, y_obs, x_obs, error_sum)
+            u, error_sum = self.forward(xr, x_obs, error_sum)
     
             #apply disturbance
             if disturbance == True and n >= steps//2:
@@ -85,19 +74,17 @@ class LQRISolver:
 
             #system dynamics step
             x     = x + (self.a@x + self.b@u)*self.dt
-            y     = self.c@x
 
             u_result[n] = u[:, 0]
             x_result[n] = x[:, 0]
-            y_result[n] = y[:, 0]
 
-        return u_result, x_result, y_result
+        return u_result, x_result
              
 
-    def forward(self, yr, y, x, error_sum):
+    def forward(self, xr, x, error_sum):
 
         #compute error
-        error     = yr - y
+        error     = xr - x
 
         #integral action
         error_sum_new = error_sum + error*self.dt
@@ -113,11 +100,11 @@ class LQRISolver:
     dx = A x + B u
     cost = sum x[k].T*Q*x[k] + u[k].T*R*u[k]
     '''
-    def _find_ki(self, a, b, c, q, r):
+    def _find_ki(self, a, b, q, r):
 
         n = a.shape[0]  #system order
         m = b.shape[1]  #inputs count
-        k = c.shape[0]  #outputs count
+        k = a.shape[0]  #outputs count
 
         #matrix augmentation with integral action
         a_aug = numpy.zeros((n+k, n+k))
@@ -125,14 +112,12 @@ class LQRISolver:
         q_aug = numpy.zeros((n+k, n+k))
 
         a_aug[0:n, 0:n] = a
-        a_aug[n:, 0:n]  = c
+        a_aug[n:, 0:n]  = numpy.eye(n)
 
         b_aug[0:n,0:m]  = b
 
         #project Q matric to output, and fill augmented q matrix
-        tmp = (c@q).sum(axis=1)
-        for i in range(k):
-            q_aug[n+i][n+i] = tmp[i]
+        q_aug[n:, n:] = q
 
         # continuous-time algebraic Riccati equation solution
         p = scipy.linalg.solve_continuous_are(a_aug, b_aug, q_aug, r)

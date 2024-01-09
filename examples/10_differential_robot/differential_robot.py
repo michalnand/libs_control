@@ -1,6 +1,6 @@
 import numpy
 from render import *
-
+import LibsControl
 
 class DifferentialRobot:
     def __init__(self, dt = 0.001):
@@ -51,32 +51,39 @@ class DifferentialRobot:
         self.y_pos = 0
 
 
-    def forward(self, x, u):
-        dx = self.mat_a@x + self.mat_b@u
 
-        x  = x + dx*self.dt
-        y  = self.mat_c@x
+    def forward(self, x, u):
+        #dx = self.mat_a@x + self.mat_b@u
+        #x  = x + dx*self.dt
+        #y  = self.mat_c@x
+
+        x, y  = LibsControl.ODESolverRK4(self._forward_func, x, u, self.dt)
 
         #angular velocity
         w  = y[0, 0]
         #velocity
         v = y[2, 0]
 
-
         #position in cartesian
         self.x_pos+= v*numpy.cos(self.theta)*self.dt
         self.y_pos+= v*numpy.sin(self.theta)*self.dt
         self.theta+= w*self.dt
          
-        
         #wrap into -pi .. pi
         #self.theta = numpy.arctan2(numpy.sin(self.theta), numpy.cos(self.theta))
 
         #wrao into 0 .. 2pi
         self.theta = numpy.mod(self.theta, 2.0*numpy.pi)
 
-
         return x, y
+    
+
+    def _forward_func(self, x, u):
+        dx = self.mat_a@x + self.mat_b@u
+        y  = self.mat_c@x
+
+        return dx, y 
+
 
     
     def render(self, target_x_pos, target_y_pos):
