@@ -9,25 +9,25 @@ class KalmanFilter:
     # shape - filter process batched element wise, with given shape
     # rx - position noise variance
     # q  - process noise variance
-    def __init__(self, shape, rx, q = 10**-3):
+    def __init__(self, n_count, r, q = 10**-4):
 
-        self.x0 = numpy.zeros(shape)
-        self.x1 = numpy.zeros(shape)
+        self.x0 = numpy.zeros(n_count)
+        self.x1 = numpy.zeros(n_count)
 
         #position variance
-        self.rx = rx
+        self.rx = r
 
         #velocity variance
-        self.rv = 2*rx
+        self.rv = 2*r
 
         self.q  = q
 
-        self.x_hat = numpy.zeros(shape)
-        self.v_hat = numpy.zeros(shape)
+        self.x_hat = numpy.zeros(n_count)
+        self.v_hat = numpy.zeros(n_count)
 
         #initial uncertainity
-        self.px = 1.0*numpy.ones(shape)
-        self.pv = 1.0*numpy.ones(shape)
+        self.px = 1.0*numpy.ones(n_count)
+        self.pv = 1.0*numpy.ones(n_count)
 
     # x - noised position measurement
     # returns denoised position and velocity
@@ -55,7 +55,7 @@ class KalmanFilter:
         self.px = (1.0 - kx)*self.px
         self.pv = (1.0 - kv)*self.pv
 
-        return self.x_hat, self.px
+        return self.x_hat #, self.px
     
     #predixt n-steps into future, from given x_measurement as initial state
     def predict(self, num_steps):
@@ -78,7 +78,7 @@ class KalmanFilter:
             x_result[n]     = x_hat
             px_result[n]    = px
 
-        return x_result, px_result
+        return x_result #, px_result
 
 
 
@@ -91,32 +91,32 @@ class KalmanFilterACC:
     # shape - filter process batched element wise, with given shape
     # rx - position noise variance
     # q  - process noise variance
-    def __init__(self, shape, rx, q = 10**-3):
+    def __init__(self, n_count, r, q = 10**-4):
 
-        self.x0 = numpy.zeros(shape)
-        self.x1 = numpy.zeros(shape)
-        self.x2 = numpy.zeros(shape)
+        self.x0 = numpy.zeros(n_count)
+        self.x1 = numpy.zeros(n_count)
+        self.x2 = numpy.zeros(n_count)
 
         #position variance
-        self.rx = rx
+        self.rx = r
 
         #velocity variance
-        self.rv = 2*rx
+        self.rv = 2*r
 
         #acceleration variance
-        self.ra = 4*rx
+        self.ra = 4*r
 
 
         self.q  = q
 
-        self.x_hat = numpy.zeros(shape)
-        self.v_hat = numpy.zeros(shape)
-        self.a_hat = numpy.zeros(shape)
+        self.x_hat = numpy.zeros(n_count)
+        self.v_hat = numpy.zeros(n_count)
+        self.a_hat = numpy.zeros(n_count)
 
         #initial uncertainity
-        self.px = 1.0*numpy.ones(shape)
-        self.pv = 1.0*numpy.ones(shape)
-        self.pa = 1.0*numpy.ones(shape)
+        self.px = 1.0*numpy.ones(n_count)
+        self.pv = 1.0*numpy.ones(n_count)
+        self.pa = 1.0*numpy.ones(n_count)
 
     # x - noised position measurement
     # returns denoised position and velocity
@@ -153,7 +153,7 @@ class KalmanFilterACC:
         self.pv = (1.0 - kv)*self.pv
         self.pa = (1.0 - ka)*self.pa
 
-        return self.x_hat, self.px
+        return self.x_hat #, self.px
     
     #predixt n-steps into future, from given x_measurement as initial state
     def predict(self, num_steps):
@@ -180,7 +180,7 @@ class KalmanFilterACC:
             x_result[n]     = x_hat
             px_result[n]    = px
 
-        return x_result, px_result
+        return x_result #, px_result
     
 
 
@@ -193,7 +193,7 @@ q       : process noise variance
 '''
 class KalmanFilterUniversal:
     
-    def __init__(self, n_count, r, q = 10**-10, mode = "acceleration"):
+    def __init__(self, n_count, r, q = 10**-8, mode = "acceleration"):
         
         if mode == "velocity":
             mat_a = [
@@ -218,29 +218,27 @@ class KalmanFilterUniversal:
         c = numpy.zeros((1, n))
         c[0][0] = 1.0 
 
+
         q_mat = numpy.zeros((n, n)) 
         for i in range(n):
-            q_mat[i][i] = q*(2**i)
+            q_mat[i][i] = q #*(2**i)
 
-        #q_mat[-1][-1] = q
 
         r_mat = r*numpy.ones((1, 1))
 
         self.mat_k = self._find_kalman_gain(self.mat_a, c, r_mat, q_mat)
 
-        self.x_hat = None # numpy.zeros((n_count, n)) 
 
-        print(self.mat_k)
+        self.x_hat = numpy.zeros((n_count, n)) 
+
+        print(">>> ", self.mat_k)
 
     
     def step(self, x_measurement, return_full_state = False):
-        if self.x_hat is None:
-            self.x_hat = numpy.zeros((x_measurement.shape[0], self.mat_a.shape[0])) 
-            self.x_hat[:, 0] = x_measurement
-
-
         error = x_measurement - self.x_hat[:, 0]
         error = numpy.expand_dims(error, axis=1)
+
+        tmp = error@self.mat_k.T
         
         self.x_hat  = self.x_hat@self.mat_a.T + error@self.mat_k.T
 
@@ -263,11 +261,25 @@ class KalmanFilterUniversal:
         else:
             return x_result[:, :, 0]
     
+
+    
     def _find_kalman_gain(self, a, c, r, q):
         p = scipy.linalg.solve_discrete_are(a.T, c.T, q, r) 
-        k = (p@c.T)@scipy.linalg.inv(c@p@c.T + r)
+        k = p@c.T@scipy.linalg.inv(c@p@c.T + r)
         return k
+    
+    '''
+    def _find_kalman_gain(self, a, c, r, q):
+        p = numpy.eye(a.shape[0])
+        #p = q.copy()
 
+        #solve DARE
+        for i in range(1000):
+            p = a@p@a.T - (a@p@c.T)@scipy.linalg.inv(c@p@c.T + r)@(c@p@a) + q
+
+        k = p@c.T@scipy.linalg.inv(c@p@c.T + r)
+        return k
+    '''
 
 if __name__ == "__main__":
 
@@ -276,14 +288,13 @@ if __name__ == "__main__":
     n_steps = 1000
 
     #noise variance
-    rx = 0.1
+    rx = 0.05
 
     n_count = 10
 
     #1D kalman
     #filter = KalmanFilter((1, ), rx)
-
-    filter = KalmanFilterUniversal(n_count, rx)
+    filter = KalmanFilterUniversal(n_count, rx, q = 10**-8)
 
     #reference - simple low pass filter
     x_lp = 0.0
@@ -343,7 +354,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.xlabel("step")
     plt.ylabel("value")
-    plt.plot(x_true_result, color='red', label="true value", linewidth=2.0)
+    plt.plot(x_true_result, color='red', label="true value", linewidth=3.0)
     plt.plot(x_measurment_result, color='salmon', label="noised measurement", alpha=0.5)
     plt.plot(x_lp_result, color='lime', label="low pass filter estimated", linewidth=1.5)
     plt.plot(x_kalman_result, color='blue', label="kalman filter estimated", linewidth=1.5)

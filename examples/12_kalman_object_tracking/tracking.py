@@ -37,7 +37,8 @@ if __name__ == "__main__":
     noise_var = 0.0005
 
     #kalman = LibsControl.KalmanFilterUniversal(2, r=noise_var, q=10**-5, mode = "velocity")
-    kalman = LibsControl.KalmanFilterUniversal(2, r=noise_var, q=10**-6, mode = "acceleration")
+    #kalman = LibsControl.KalmanFilterUniversal(2, r=noise_var, q=10**-4, mode = "acceleration")
+    kalman = LibsControl.KalmanFilterACC(2, r=noise_var, q=10**-4)
 
 
     line_max = 20

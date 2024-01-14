@@ -105,7 +105,7 @@ if __name__ == "__main__":
     n_count = 3
     prediction_steps = 32
 
-    noise_variance = 0.0001
+    noise_variance = 0.00001
 
     bs = BumpingSpheres(n_count)
 
@@ -113,9 +113,9 @@ if __name__ == "__main__":
 
     colors[:] = 1
     
-    #kalman_v   = LibsControl.KalmanFilter((n_count, 2), noise_variance)
-    #kalman_acc = LibsControl.KalmanFilterACC((n_count, 2), noise_variance)
-    kalman_v   = LibsControl.KalmanFilterUniversal(n_count*2, r=noise_variance, q=10**-4, mode = "velocity")
+    #kalman_v   = LibsControl.KalmanFilter(n_count*2, noise_variance)
+    #kalman_acc = LibsControl.KalmanFilterACC(n_count*2, noise_variance)
+    kalman_v   = LibsControl.KalmanFilterUniversal(n_count*2, r=noise_variance, q=10**-8, mode = "velocity")
     kalman_acc = LibsControl.KalmanFilterUniversal(n_count*2, r=noise_variance, q=10**-8, mode = "acceleration")
 
     height = 512
