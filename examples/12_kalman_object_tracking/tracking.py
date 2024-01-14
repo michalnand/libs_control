@@ -62,7 +62,7 @@ class KalmanFilter:
         return self.x_hat
 '''
 
-
+'''
 class KalmanFilter:
     # rx - position noise variance
     # rv - velocity noise variance
@@ -100,7 +100,57 @@ class KalmanFilter:
         self.pv = (1.0 - kv)*self.pv
 
         return self.x_hat, self.v_hat
+'''
 
+'''
+constant velocity model Kalman filter
+'''
+class KalmanFilter:
+    # rx - position noise variance
+    # rv - velocity noise variance
+    # q  - process noise variance
+    def __init__(self, rx, rv, q = 10**-4):
+
+        self.x0 = 0.0
+        self.x1 = 0.0
+
+        self.rx = rx
+        self.rv = rv
+        self.q  = q
+
+        self.x_hat = 0.0
+        self.v_hat = 0.0
+
+        self.px = 1.0
+        self.pv = 1.0
+
+    # x - noised position measurement
+    # returns denoised position and velocity
+    def step(self, x_measurement):
+        self.x1 = self.x0
+        self.x0 = x_measurement
+
+
+        #state predict
+        self.x_hat = self.x_hat + self.v_hat
+        self.v_hat = self.v_hat
+        self.px = self.px + self.pv
+        self.pv = self.pv + self.q
+
+        #kalman gain
+        kx = self.px/(self.px + self.rx)
+        kv = self.pv/(self.pv + self.rv)
+
+        #update
+        x = self.x0
+        v = self.x0 - self.x1
+
+        self.x_hat = self.x_hat + kx*(x - self.x_hat)
+        self.v_hat = self.v_hat + kv*(v - self.v_hat)
+        self.px = (1.0 - kx)*self.px
+        self.pv = (1.0 - kv)*self.pv
+
+        return self.x_hat, self.v_hat
 
 
 if __name__ == "__main__":
