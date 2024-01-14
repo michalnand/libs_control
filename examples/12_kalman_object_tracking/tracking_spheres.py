@@ -102,20 +102,21 @@ def plot_trajectory(result_im, trajectory, color):
 if __name__ == "__main__":
 
 
-    count = 3
+    n_count = 3
+    prediction_steps = 32
 
-    noise_variance = 0.001
+    noise_variance = 0.0001
 
-    bs = BumpingSpheres(count)
+    bs = BumpingSpheres(n_count)
 
-    colors = numpy.random.rand(count, 3)
+    colors = numpy.random.rand(n_count, 3)
 
     colors[:] = 1
     
-
-    kalman_v   = LibsControl.KalmanFilter((count, 2), noise_variance)
-    kalman_acc = LibsControl.KalmanFilterACC((count, 2), noise_variance)
-
+    #kalman_v   = LibsControl.KalmanFilter((n_count, 2), noise_variance)
+    #kalman_acc = LibsControl.KalmanFilterACC((n_count, 2), noise_variance)
+    kalman_v   = LibsControl.KalmanFilterUniversal(n_count*2, r=noise_variance, q=10**-4, mode = "velocity")
+    kalman_acc = LibsControl.KalmanFilterUniversal(n_count*2, r=noise_variance, q=10**-8, mode = "acceleration")
 
     height = 512
     width  = 1024    
@@ -128,16 +129,19 @@ if __name__ == "__main__":
         x_pos = bs.step()
 
 
-        x_noised = x_pos #+ (noise_variance)*numpy.random.randn(x_pos.shape[0], x_pos.shape[1])
+        x_noised = x_pos + (noise_variance)*numpy.random.randn(x_pos.shape[0], x_pos.shape[1])
 
-        kalman_v.step(x_noised)
-        kalman_acc.step(x_noised)
+        kalman_v.step(x_noised.reshape(n_count*2))
+        kalman_acc.step(x_noised.reshape(n_count*2))
 
-        x_pred_v, p_pred_v = kalman_v.predict(50)
+
+        x_pred_v = kalman_v.predict(prediction_steps)
+        x_pred_v = x_pred_v.reshape((prediction_steps, n_count, 2))
         x_pred_v[:, :, 0] = 0.5*(x_pred_v[:, :, 0] + 1.0)*width
         x_pred_v[:, :, 1] = 0.5*(x_pred_v[:, :, 1] + 1.0)*height
 
-        x_pred_acc, p_pred_acc = kalman_acc.predict(50)
+        x_pred_acc = kalman_acc.predict(prediction_steps)
+        x_pred_acc = x_pred_acc.reshape((prediction_steps, n_count, 2))
         x_pred_acc[:, :, 0] = 0.5*(x_pred_acc[:, :, 0] + 1.0)*width
         x_pred_acc[:, :, 1] = 0.5*(x_pred_acc[:, :, 1] + 1.0)*height
 
@@ -145,7 +149,7 @@ if __name__ == "__main__":
 
         result_im = numpy.zeros((height, width, 3), dtype=numpy.float32)
 
-        for i in range(count):
+        for i in range(n_count):
 
             x = int((x_pos[i][0] + 1.0)*0.5*width)
             y = int((x_pos[i][1] + 1.0)*0.5*height) 

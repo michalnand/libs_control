@@ -29,144 +29,17 @@ def detect_object(frame, color_min, color_max, height = 512, width = 512):
     return pos
 
 
-'''
-class KalmanFilter:
-    # Q - process noise covariance, 2x2
-    # R - measurement noise covariance, 2x2
-    def __init__(self, r):
-
-        self.mat_a = numpy.eye(2)
-        self.mat_a[0][1] = 1.0
-
-        self.x_hat = numpy.zeros((2, 1))
-
-        self.p = 0.5*numpy.eye(2)
-
-        self.r = r
-
-    def step(self, x):
-
-        #prediction
-        x_pred = self.mat_a @ self.x_hat
-        p_pred = self.mat_a @ self.p @ self.mat_a.T
-
-        #update
-        y = x - x_pred
-        S = p_pred + self.r
-        K = p_pred @ numpy.linalg.inv(S)
-
-        #correction
-        self.x_hat = x_pred + K @ y
-        self.p = p_pred - K  @ p_pred
-
-        return self.x_hat
-'''
-
-'''
-class KalmanFilter:
-    # rx - position noise variance
-    # rv - velocity noise variance
-    # q  - process noise variance
-    def __init__(self, rx, rv, q = 10**-4):
-
-        self.rx = rx
-        self.rv = rv
-        self.q = q
-
-        self.x_hat = 0.0
-        self.v_hat = 0.0
-
-        self.px = 1.0
-        self.pv = 1.0
-
-    # x - noised position measurement
-    # v - noised velocity measurement
-    # returns denoised position and velocity
-    def step(self, x, v):
-        #state predict
-        self.x_hat = self.x_hat + self.v_hat
-        self.v_hat = self.v_hat
-        self.px = self.px + self.pv
-        self.pv = self.pv + self.q
-
-        #kalman gain
-        kx = self.px/(self.px + self.rx)
-        kv = self.pv/(self.pv + self.rv)
-
-        #update
-        self.x_hat = self.x_hat + kx*(x - self.x_hat)
-        self.v_hat = self.v_hat + kv*(v - self.v_hat)
-        self.px = (1.0 - kx)*self.px
-        self.pv = (1.0 - kv)*self.pv
-
-        return self.x_hat, self.v_hat
-'''
-
-'''
-constant velocity model Kalman filter
-'''
-class KalmanFilter:
-    # rx - position noise variance
-    # rv - velocity noise variance
-    # q  - process noise variance
-    def __init__(self, rx, rv, q = 10**-4):
-
-        self.x0 = 0.0
-        self.x1 = 0.0
-
-        self.rx = rx
-        self.rv = rv
-        self.q  = q
-
-        self.x_hat = 0.0
-        self.v_hat = 0.0
-
-        self.px = 1.0
-        self.pv = 1.0
-
-    # x - noised position measurement
-    # returns denoised position and velocity
-    def step(self, x_measurement):
-        self.x1 = self.x0
-        self.x0 = x_measurement
-
-
-        #state predict
-        self.x_hat = self.x_hat + self.v_hat
-        self.v_hat = self.v_hat
-        self.px = self.px + self.pv
-        self.pv = self.pv + self.q
-
-        #kalman gain
-        kx = self.px/(self.px + self.rx)
-        kv = self.pv/(self.pv + self.rv)
-
-        #update
-        x = self.x0
-        v = self.x0 - self.x1
-
-        self.x_hat = self.x_hat + kx*(x - self.x_hat)
-        self.v_hat = self.v_hat + kv*(v - self.v_hat)
-        self.px = (1.0 - kx)*self.px
-        self.pv = (1.0 - kv)*self.pv
-
-        return self.x_hat, self.v_hat
-
-
 if __name__ == "__main__":
 
     source= cv2.VideoCapture(0)
 
 
-    noise_var = 0.001
+    noise_var = 0.0005
 
-    z_now  = numpy.zeros(2)
-    z_prev = numpy.zeros(2)
+    #kalman = LibsControl.KalmanFilterUniversal(2, r=noise_var, q=10**-5, mode = "velocity")
+    kalman = LibsControl.KalmanFilterUniversal(2, r=noise_var, q=10**-6, mode = "acceleration")
 
-  
-    kalman_x = KalmanFilter(noise_var, 2*noise_var, q = 10**-4)
-    kalman_y = KalmanFilter(noise_var, 2*noise_var, q = 10**-4)
-    
+
     line_max = 20
     line_gt = []
     line_noised = []
@@ -185,16 +58,11 @@ if __name__ == "__main__":
 
         pos = detect_object(frame, numpy.array([80, 0.2, 0.2]), numpy.array([130, 1.0, 1.0]))
 
-        z_prev = z_now
         z_now  = pos + (noise_var**0.5)*numpy.random.randn(2)
 
-        #estimate velocity
-        dz     = z_now - z_prev
-
         #kalman filter step
-        z_fil_x, _ = kalman_x.step(z_now[1], dz[1])
-
-        z_fil_y, _ = kalman_y.step(z_now[0], dz[0])
+        z_fil = kalman.step(z_now)
+        z_pred = kalman.predict(10)
         
         result_im = frame.copy()
 
@@ -210,8 +78,8 @@ if __name__ == "__main__":
             line_gt = line_gt[1:]
 
 
-        x = int(z_fil_x*width)
-        y = int(z_fil_y*height)
+        x = int(z_fil[1]*width)
+        y = int(z_fil[0]*height)
         cv2.circle(result_im, (x, y), 30, (1, 0, 0), -1)
 
         line_filter.append([x, y])
@@ -226,6 +94,12 @@ if __name__ == "__main__":
         if len(line_noised) > line_max:
             line_noised = line_noised[1:]
 
+        z_pred[:, 0]*= height
+        z_pred[:, 1]*= width
+        z_pred[:, [0, 1]] = z_pred[:, [1, 0]]
+        z_pred = z_pred.astype(int)
+
+
         line_tmp = numpy.expand_dims(numpy.array(line_gt), axis=1)
         result_im = cv2.polylines(result_im, [line_tmp], False, (0, 1, 0), 4)
 
@@ -235,10 +109,16 @@ if __name__ == "__main__":
         line_tmp = numpy.expand_dims(numpy.array(line_filter), axis=1)
         result_im = cv2.polylines(result_im, [line_tmp], False, (1, 0, 0), 4)
 
+        line_tmp = numpy.expand_dims(numpy.array(z_pred), axis=1)
+        result_im = cv2.polylines(result_im, [line_tmp], False, (1, 0, 1), 4)
+
+        
+
         
         result_im = cv2.putText(result_im, "ground truth", (10, 50), cv2.FONT_HERSHEY_SIMPLEX , 1.2, (0, 1, 0), 4, cv2.LINE_AA) 
         result_im = cv2.putText(result_im, "measurement",  (10, 100), cv2.FONT_HERSHEY_SIMPLEX , 1.2, (0, 0, 1), 4, cv2.LINE_AA) 
         result_im = cv2.putText(result_im, "filtered",  (10, 150), cv2.FONT_HERSHEY_SIMPLEX , 1.2, (1, 0, 0), 4, cv2.LINE_AA) 
+        result_im = cv2.putText(result_im, "prediction",  (10, 200), cv2.FONT_HERSHEY_SIMPLEX , 1.2, (1, 0, 1), 4, cv2.LINE_AA) 
 
 
         result_im = cv2.resize(result_im, (width//2, height//2))

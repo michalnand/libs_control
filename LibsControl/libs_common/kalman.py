@@ -1,6 +1,6 @@
 import numpy
 import matplotlib.pyplot as plt
-
+import scipy.linalg
 
 '''
 constant velocity model Kalman filter
@@ -181,17 +181,109 @@ class KalmanFilterACC:
             px_result[n]    = px
 
         return x_result, px_result
+    
+
+
+'''
+constant acceleration dynamics model
+
+n_count : number of indepdendent inputs
+r       : measurement noise variance
+q       : process noise variance
+'''
+class KalmanFilterUniversal:
+    
+    def __init__(self, n_count, r, q = 10**-10, mode = "acceleration"):
+        
+        if mode == "velocity":
+            mat_a = [
+                [1.0, 1.0],
+                [0.0, 1.0]
+            ]
+        elif mode == "acceleration":
+            mat_a = [
+                [1.0, 1.0, 0.0],
+                [0.0, 1.0, 1.0],
+                [0.0, 0.0, 1.0]
+            ]
+        else:
+            mat_a = [
+                [1.0]
+            ]
+        
+        self.mat_a = numpy.array(mat_a)
+
+        n = self.mat_a.shape[0]
+
+        c = numpy.zeros((1, n))
+        c[0][0] = 1.0 
+
+        q_mat = numpy.zeros((n, n)) 
+        for i in range(n):
+            q_mat[i][i] = q*(2**i)
+
+        #q_mat[-1][-1] = q
+
+        r_mat = r*numpy.ones((1, 1))
+
+        self.mat_k = self._find_kalman_gain(self.mat_a, c, r_mat, q_mat)
+
+        self.x_hat = None # numpy.zeros((n_count, n)) 
+
+        print(self.mat_k)
+
+    
+    def step(self, x_measurement, return_full_state = False):
+        if self.x_hat is None:
+            self.x_hat = numpy.zeros((x_measurement.shape[0], self.mat_a.shape[0])) 
+            self.x_hat[:, 0] = x_measurement
+
+
+        error = x_measurement - self.x_hat[:, 0]
+        error = numpy.expand_dims(error, axis=1)
+        
+        self.x_hat  = self.x_hat@self.mat_a.T + error@self.mat_k.T
+
+        if return_full_state:
+            return self.x_hat
+        else:
+            return self.x_hat[:, 0]
+        
+    def predict(self, num_steps, return_full_state = False):
+        x_result  = numpy.zeros((num_steps, ) + self.x_hat.shape)
+
+        x_hat = self.x_hat.copy()
+
+        for n in range(num_steps):
+            x_hat       = x_hat@self.mat_a.T
+            x_result[n] = x_hat
+                    
+        if return_full_state:
+            return x_result
+        else:
+            return x_result[:, :, 0]
+    
+    def _find_kalman_gain(self, a, c, r, q):
+        p = scipy.linalg.solve_discrete_are(a.T, c.T, q, r) 
+        k = (p@c.T)@scipy.linalg.inv(c@p@c.T + r)
+        return k
+
 
 if __name__ == "__main__":
+
 
     #num of steps
     n_steps = 1000
 
     #noise variance
-    rx = 0.05
+    rx = 0.1
+
+    n_count = 10
 
     #1D kalman
-    filter = KalmanFilter((1, ), rx)
+    #filter = KalmanFilter((1, ), rx)
+
+    filter = KalmanFilterUniversal(n_count, rx)
 
     #reference - simple low pass filter
     x_lp = 0.0
@@ -216,14 +308,14 @@ if __name__ == "__main__":
 
         z_measurement = x_true + (rx**0.5)*numpy.random.randn()
 
-        x_kalman, _ = filter.step(numpy.array(z_measurement))
+        x_kalman = filter.step(numpy.ones(n_count)*z_measurement)
 
-        k = 0.9
+        k = 0.95
         x_lp = k*x_lp + (1.0 - k)*z_measurement
 
         x_true_result[i]        = x_true
         x_measurment_result[i]  = z_measurement
-        x_kalman_result[i]      = x_kalman.item()
+        x_kalman_result[i]      = x_kalman[0].item()
         x_lp_result[i]          = x_lp
 
     
