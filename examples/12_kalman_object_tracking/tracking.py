@@ -38,7 +38,8 @@ if __name__ == "__main__":
 
     #kalman = LibsControl.KalmanFilterUniversal(2, r=noise_var, q=10**-5, mode = "velocity")
     #kalman = LibsControl.KalmanFilterUniversal(2, r=noise_var, q=10**-4, mode = "acceleration")
-    kalman = LibsControl.KalmanFilterACC(2, r=noise_var, q=10**-4)
+    #kalman = LibsControl.KalmanFilterACC(2, r=noise_var, q=10**-5)
+    kalman = LibsControl.KalmanFilterVel(2, r=noise_var, q=10**-6)
 
 
     line_max = 20
@@ -110,8 +111,8 @@ if __name__ == "__main__":
         line_tmp = numpy.expand_dims(numpy.array(line_filter), axis=1)
         result_im = cv2.polylines(result_im, [line_tmp], False, (1, 0, 0), 4)
 
-        line_tmp = numpy.expand_dims(numpy.array(z_pred), axis=1)
-        result_im = cv2.polylines(result_im, [line_tmp], False, (1, 0, 1), 4)
+        #line_tmp = numpy.expand_dims(numpy.array(z_pred), axis=1)
+        #result_im = cv2.polylines(result_im, [line_tmp], False, (1, 0, 1), 4)
 
         
 
@@ -119,7 +120,7 @@ if __name__ == "__main__":
         result_im = cv2.putText(result_im, "ground truth", (10, 50), cv2.FONT_HERSHEY_SIMPLEX , 1.2, (0, 1, 0), 4, cv2.LINE_AA) 
         result_im = cv2.putText(result_im, "measurement",  (10, 100), cv2.FONT_HERSHEY_SIMPLEX , 1.2, (0, 0, 1), 4, cv2.LINE_AA) 
         result_im = cv2.putText(result_im, "filtered",  (10, 150), cv2.FONT_HERSHEY_SIMPLEX , 1.2, (1, 0, 0), 4, cv2.LINE_AA) 
-        result_im = cv2.putText(result_im, "prediction",  (10, 200), cv2.FONT_HERSHEY_SIMPLEX , 1.2, (1, 0, 1), 4, cv2.LINE_AA) 
+        #result_im = cv2.putText(result_im, "prediction",  (10, 200), cv2.FONT_HERSHEY_SIMPLEX , 1.2, (1, 0, 1), 4, cv2.LINE_AA) 
 
 
         result_im = cv2.resize(result_im, (width//2, height//2))

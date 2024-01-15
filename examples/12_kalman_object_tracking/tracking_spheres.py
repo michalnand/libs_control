@@ -115,8 +115,8 @@ if __name__ == "__main__":
     
     #kalman_v   = LibsControl.KalmanFilter(n_count*2, noise_variance)
     #kalman_acc = LibsControl.KalmanFilterACC(n_count*2, noise_variance)
-    kalman_v   = LibsControl.KalmanFilterUniversal(n_count*2, r=noise_variance, q=10**-8, mode = "velocity")
-    kalman_acc = LibsControl.KalmanFilterUniversal(n_count*2, r=noise_variance, q=10**-8, mode = "acceleration")
+    kalman_v   = LibsControl.KalmanFilterVel(n_count*2, r=noise_variance, q=10**-4)
+    kalman_acc = LibsControl.KalmanFilterACC(n_count*2, r=noise_variance, q=10**-4)
 
     height = 512
     width  = 1024    

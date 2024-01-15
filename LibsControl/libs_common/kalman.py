@@ -5,6 +5,8 @@ import scipy.linalg
 '''
 constant velocity model Kalman filter
 '''
+
+'''
 class KalmanFilter:
     # shape - filter process batched element wise, with given shape
     # rx - position noise variance
@@ -79,13 +81,15 @@ class KalmanFilter:
             px_result[n]    = px
 
         return x_result #, px_result
-
+'''
 
 
 
 
 '''
 constant acceleration model Kalman filter
+'''
+
 '''
 class KalmanFilterACC:
     # shape - filter process batched element wise, with given shape
@@ -181,65 +185,64 @@ class KalmanFilterACC:
             px_result[n]    = px
 
         return x_result #, px_result
-    
-
-
 '''
-constant acceleration dynamics model
 
-n_count : number of indepdendent inputs
-r       : measurement noise variance
-q       : process noise variance
-'''
-class KalmanFilterUniversal:
+
+
+class KalmanFilterVel:
     
-    def __init__(self, n_count, r, q = 10**-8, mode = "acceleration"):
+    def __init__(self, n_count, r, q = 10**-4):
         
-        if mode == "velocity":
-            mat_a = [
-                [1.0, 1.0],
-                [0.0, 1.0]
-            ]
-        elif mode == "acceleration":
-            mat_a = [
-                [1.0, 1.0, 0.0],
-                [0.0, 1.0, 1.0],
-                [0.0, 0.0, 1.0]
-            ]
-        else:
-            mat_a = [
-                [1.0]
-            ]
+        mat_a = [
+            [1.0, 1.0],
+            [0.0, 1.0]
+        ]
+       
         
         self.mat_a = numpy.array(mat_a)
 
         n = self.mat_a.shape[0]
 
-        c = numpy.zeros((1, n))
-        c[0][0] = 1.0 
+        c = numpy.eye(n)
 
 
-        q_mat = numpy.zeros((n, n)) 
+        #q_mat = q*numpy.eye(n) 
+
+        q_mat = numpy.zeros((n, n))
         for i in range(n):
-            q_mat[i][i] = q #*(2**i)
+            q_mat[i][i] = q*(2**i)
+       
+        r_mat = numpy.zeros((n, n))
+        for i in range(n):
+            r_mat[i][i] = r*(2**i)
 
-
-        r_mat = r*numpy.ones((1, 1))
 
         self.mat_k = self._find_kalman_gain(self.mat_a, c, r_mat, q_mat)
 
 
         self.x_hat = numpy.zeros((n_count, n)) 
 
-        print(">>> ", self.mat_k)
+        print("kalman gain matrix")
+        print(self.mat_k)
+        print("\n\n")
+
+        self.x0 = numpy.zeros(n_count)
+        self.x1 = numpy.zeros(n_count)
 
     
     def step(self, x_measurement, return_full_state = False):
-        error = x_measurement - self.x_hat[:, 0]
-        error = numpy.expand_dims(error, axis=1)
 
-        tmp = error@self.mat_k.T
-        
+        self.x2 = self.x1.copy()
+        self.x1 = self.x0.copy()
+        self.x0 = x_measurement.copy()
+
+        x = self.x0
+        v = self.x0 - self.x1
+
+        x_all = numpy.vstack([x, v]).T
+
+        error = x_all - self.x_hat
+
         self.x_hat  = self.x_hat@self.mat_a.T + error@self.mat_k.T
 
         if return_full_state:
@@ -268,24 +271,94 @@ class KalmanFilterUniversal:
         k = p@c.T@scipy.linalg.inv(c@p@c.T + r)
         return k
     
-    '''
+
+
+
+
+class KalmanFilterACC:
+    
+    def __init__(self, n_count, r, q = 10**-4):
+        
+        mat_a = [
+            [1.0, 1.0, 0.0],
+            [0.0, 1.0, 1.0],
+            [0.0, 0.0, 1.0]
+        ]
+        
+        self.mat_a = numpy.array(mat_a)
+
+        n = self.mat_a.shape[0]
+
+        c = numpy.eye(n)
+
+
+        q_mat = q*numpy.eye(n) 
+       
+        r_mat = numpy.zeros((n, n))
+        for i in range(n):
+            r_mat[i][i] = r*(2**i)
+
+        self.mat_k = self._find_kalman_gain(self.mat_a, c, r_mat, q_mat)
+
+
+        self.x_hat = numpy.zeros((n_count, n)) 
+
+        
+        print("kalman gain matrix")
+        print(self.mat_k)
+        print("\n\n")
+
+        self.x0 = numpy.zeros(n_count)
+        self.x1 = numpy.zeros(n_count)
+        self.x2 = numpy.zeros(n_count)
+
+    
+    def step(self, x_measurement, return_full_state = False):
+
+        self.x2 = self.x1.copy()
+        self.x1 = self.x0.copy()
+        self.x0 = x_measurement.copy()
+
+        x = self.x0
+        v = self.x0 - self.x1
+        a = self.x0 - 2*self.x1 + self.x2
+
+        x_all = numpy.vstack([x, v, a]).T
+
+        error = x_all - self.x_hat
+
+        self.x_hat  = self.x_hat@self.mat_a.T + error@self.mat_k.T
+
+        if return_full_state:
+            return self.x_hat
+        else:
+            return self.x_hat[:, 0]
+        
+    def predict(self, num_steps, return_full_state = False):
+        x_result  = numpy.zeros((num_steps, ) + self.x_hat.shape)
+
+        x_hat = self.x_hat.copy()
+
+        for n in range(num_steps):
+            x_hat       = x_hat@self.mat_a.T
+            x_result[n] = x_hat
+                    
+        if return_full_state:
+            return x_result
+        else:
+            return x_result[:, :, 0]
+    
     def _find_kalman_gain(self, a, c, r, q):
-        p = numpy.eye(a.shape[0])
-        #p = q.copy()
-
-        #solve DARE
-        for i in range(1000):
-            p = a@p@a.T - (a@p@c.T)@scipy.linalg.inv(c@p@c.T + r)@(c@p@a) + q
-
+        p = scipy.linalg.solve_discrete_are(a.T, c.T, q, r) 
         k = p@c.T@scipy.linalg.inv(c@p@c.T + r)
         return k
-    '''
+
 
 if __name__ == "__main__":
 
 
     #num of steps
-    n_steps = 1000
+    n_steps = 10000
 
     #noise variance
     rx = 0.05
