@@ -1,28 +1,14 @@
-import numpy
+import numpy 
 
-'''
-def discretise(mat_a, mat_b, mat_c, dt):
+# discretise model using bilinear transform
+def c2d(a, b, c, dt):
+    i = numpy.eye(a.shape[0])
+    
+    tmp_a = numpy.linalg.inv(i - (0.5*dt)*a)
+    tmp_b = i + (0.5*dt)*a
 
-    i         = numpy.eye(mat_a.shape[0])
-    mat_a_inv = (i - 0.5*dt*mat_a)
-    mat_a_inv = numpy.linalg.inv(mat_a_inv)
+    a_disc  = tmp_a@tmp_b
+    b_disc  = (tmp_a*dt)@b
+    c_disc  = c
 
-    mat_ad    = mat_a_inv@(i - 0.5*dt*mat_a)
-    mat_bd    = (mat_a_inv@mat_b)*dt
-    mat_cd    = mat_c
-
-
-    return mat_ad, mat_bd, mat_cd
-'''
-
-
-def discretise(mat_a, mat_b, mat_c, dt):
-
-    i         = numpy.eye(mat_a.shape[0])
- 
-    mat_ad    = mat_a*dt + i
-    mat_bd    = mat_b*dt
-    mat_cd    = mat_c
-
-
-    return mat_ad, mat_bd, mat_cd
+    return a_disc, b_disc, c_disc

@@ -6,275 +6,7 @@ import scipy.linalg
 constant velocity model Kalman filter
 '''
 
-'''
-class KalmanFilter:
-    # shape - filter process batched element wise, with given shape
-    # rx - position noise variance
-    # q  - process noise variance
-    def __init__(self, n_count, r, q = 10**-4):
-
-        self.x0 = numpy.zeros(n_count)
-        self.x1 = numpy.zeros(n_count)
-
-        #position variance
-        self.rx = r
-
-        #velocity variance
-        self.rv = 2*r
-
-        self.q  = q
-
-        self.x_hat = numpy.zeros(n_count)
-        self.v_hat = numpy.zeros(n_count)
-
-        #initial uncertainity
-        self.px = 1.0*numpy.ones(n_count)
-        self.pv = 1.0*numpy.ones(n_count)
-
-    # x - noised position measurement
-    # returns denoised position and velocity
-    def step(self, x_measurement):
-        self.x1 = self.x0.copy()
-        self.x0 = x_measurement
-
-
-        #state predict
-        self.x_hat = self.x_hat + self.v_hat
-        self.v_hat = self.v_hat
-        self.px = self.px + self.pv
-        self.pv = self.pv + self.q
-
-        #kalman gain
-        kx = self.px/(self.px + self.rx)
-        kv = self.pv/(self.pv + self.rv)
-
-        #update
-        x = self.x0
-        v = self.x0 - self.x1
-
-        self.x_hat = self.x_hat + kx*(x - self.x_hat)
-        self.v_hat = self.v_hat + kv*(v - self.v_hat)
-        self.px = (1.0 - kx)*self.px
-        self.pv = (1.0 - kv)*self.pv
-
-        return self.x_hat #, self.px
     
-    #predixt n-steps into future, from given x_measurement as initial state
-    def predict(self, num_steps):
-        x_result  = numpy.zeros((num_steps, ) + self.x0.shape)
-        px_result = numpy.zeros((num_steps, ) + self.x0.shape)
-
-        x_hat = self.x_hat.copy()
-        v_hat = self.v_hat.copy()
-
-        px    = self.px.copy()
-        pv    = self.pv.copy()
-
-        for n in range(num_steps):
-            x_hat = x_hat + v_hat
-            v_hat = v_hat
-
-            px    = px + pv
-            pv    = pv + self.q
-
-            x_result[n]     = x_hat
-            px_result[n]    = px
-
-        return x_result #, px_result
-'''
-
-
-
-
-'''
-constant acceleration model Kalman filter
-'''
-
-'''
-class KalmanFilterACC:
-    # shape - filter process batched element wise, with given shape
-    # rx - position noise variance
-    # q  - process noise variance
-    def __init__(self, n_count, r, q = 10**-4):
-
-        self.x0 = numpy.zeros(n_count)
-        self.x1 = numpy.zeros(n_count)
-        self.x2 = numpy.zeros(n_count)
-
-        #position variance
-        self.rx = r
-
-        #velocity variance
-        self.rv = 2*r
-
-        #acceleration variance
-        self.ra = 4*r
-
-
-        self.q  = q
-
-        self.x_hat = numpy.zeros(n_count)
-        self.v_hat = numpy.zeros(n_count)
-        self.a_hat = numpy.zeros(n_count)
-
-        #initial uncertainity
-        self.px = 1.0*numpy.ones(n_count)
-        self.pv = 1.0*numpy.ones(n_count)
-        self.pa = 1.0*numpy.ones(n_count)
-
-    # x - noised position measurement
-    # returns denoised position and velocity
-    def step(self, x_measurement):
-        self.x2 = self.x1.copy()
-        self.x1 = self.x0.copy()
-        self.x0 = x_measurement.copy()
-
-
-        #state predict
-        self.x_hat = self.x_hat + self.v_hat
-        self.v_hat = self.v_hat + self.a_hat
-        self.a_hat = self.a_hat
-
-        self.px = self.px + self.pv
-        self.pv = self.pv + self.pa
-        self.pa = self.pa + self.q
-
-        #kalman gain
-        kx = self.px/(self.px + self.rx)
-        kv = self.pv/(self.pv + self.rv)
-        ka = self.pa/(self.pa + self.ra)
-
-        #update
-        x = self.x0
-        v = self.x0 - self.x1
-        a = self.x0 - 2.0*self.x1 + self.x2
-
-        self.x_hat = self.x_hat + kx*(x - self.x_hat)
-        self.v_hat = self.v_hat + kv*(v - self.v_hat)
-        self.a_hat = self.a_hat + ka*(a - self.a_hat)
-
-        self.px = (1.0 - kx)*self.px
-        self.pv = (1.0 - kv)*self.pv
-        self.pa = (1.0 - ka)*self.pa
-
-        return self.x_hat #, self.px
-    
-    #predixt n-steps into future, from given x_measurement as initial state
-    def predict(self, num_steps):
-        x_result  = numpy.zeros((num_steps, ) + self.x0.shape)
-        px_result = numpy.zeros((num_steps, ) + self.x0.shape)
-
-        x_hat = self.x_hat.copy()
-        v_hat = self.v_hat.copy()
-        a_hat = self.a_hat.copy()
-
-        px    = self.px.copy()
-        pv    = self.pv.copy()
-        pa    = self.pa.copy()
-
-        for n in range(num_steps):
-            x_hat = x_hat + v_hat
-            v_hat = v_hat + a_hat
-            a_hat = a_hat
-
-            px    = px + pv
-            pv    = pv + pa
-            pa    = pa + self.q
-
-            x_result[n]     = x_hat
-            px_result[n]    = px
-
-        return x_result #, px_result
-'''
-
-
-
-class KalmanFilterVel:
-    
-    def __init__(self, n_count, r, q = 10**-4):
-        
-        mat_a = [
-            [1.0, 1.0],
-            [0.0, 1.0]
-        ]
-       
-        
-        self.mat_a = numpy.array(mat_a)
-
-        n = self.mat_a.shape[0]
-
-        c = numpy.eye(n)
-
-
-        #q_mat = q*numpy.eye(n) 
-
-        q_mat = numpy.zeros((n, n))
-        for i in range(n):
-            q_mat[i][i] = q*(2**i)
-       
-        r_mat = numpy.zeros((n, n))
-        for i in range(n):
-            r_mat[i][i] = r*(2**i)
-
-
-        self.mat_k = self._find_kalman_gain(self.mat_a, c, r_mat, q_mat)
-
-
-        self.x_hat = numpy.zeros((n_count, n)) 
-
-        print("kalman gain matrix")
-        print(self.mat_k)
-        print("\n\n")
-
-        self.x0 = numpy.zeros(n_count)
-        self.x1 = numpy.zeros(n_count)
-
-    
-    def step(self, x_measurement, return_full_state = False):
-
-        self.x2 = self.x1.copy()
-        self.x1 = self.x0.copy()
-        self.x0 = x_measurement.copy()
-
-        x = self.x0
-        v = self.x0 - self.x1
-
-        x_all = numpy.vstack([x, v]).T
-
-        error = x_all - self.x_hat
-
-        self.x_hat  = self.x_hat@self.mat_a.T + error@self.mat_k.T
-
-        if return_full_state:
-            return self.x_hat
-        else:
-            return self.x_hat[:, 0]
-        
-    def predict(self, num_steps, return_full_state = False):
-        x_result  = numpy.zeros((num_steps, ) + self.x_hat.shape)
-
-        x_hat = self.x_hat.copy()
-
-        for n in range(num_steps):
-            x_hat       = x_hat@self.mat_a.T
-            x_result[n] = x_hat
-                    
-        if return_full_state:
-            return x_result
-        else:
-            return x_result[:, :, 0]
-    
-
-    
-    def _find_kalman_gain(self, a, c, r, q):
-        p = scipy.linalg.solve_discrete_are(a.T, c.T, q, r) 
-        k = p@c.T@scipy.linalg.inv(c@p@c.T + r)
-        return k
-    
-
-
-
-
 class KalmanFilterACC:
     
     def __init__(self, n_count, r, q = 10**-4):
@@ -354,11 +86,14 @@ class KalmanFilterACC:
         return k
 
 
+
+
+
 if __name__ == "__main__":
 
 
     #num of steps
-    n_steps = 10000
+    n_steps = 1000
 
     #noise variance
     rx = 0.05
@@ -367,7 +102,7 @@ if __name__ == "__main__":
 
     #1D kalman
     #filter = KalmanFilter((1, ), rx)
-    filter = KalmanFilterUniversal(n_count, rx, q = 10**-8)
+    filter = KalmanFilterACC(n_count, rx, q = 10**-8)
 
     #reference - simple low pass filter
     x_lp = 0.0

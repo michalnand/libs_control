@@ -1,10 +1,11 @@
-from .dynamical_system  import *
+from .ode_solver                    import *
 
-from .lqr_solver        import *
-from .lqri_solver       import *
-from .lqri_discrete_solver       import *
-from .lqg_solver        import *
+from .dynamical_system              import *
+from .dynamical_system_discrete     import *
 
-from .kalman import *
+from .lqr                           import *
+from .lqr_discrete                  import *
+from .lqg_discrete                  import *
 
-#from .tvd               import *
+
+from .kalman                        import *
