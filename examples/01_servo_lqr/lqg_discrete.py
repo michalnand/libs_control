@@ -105,7 +105,7 @@ for n in range(n_max):
   
     #add constant distrubance in middle
     if n > n_max//2:
-        x[0]+= 0.1*numpy.pi/180.0
+        x[0]+= 1.1*numpy.pi/180.0
 
     t_result.append(n*dt)
     u_result.append(u[:, 0].copy())

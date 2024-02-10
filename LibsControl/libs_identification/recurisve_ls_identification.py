@@ -76,7 +76,7 @@ returns :
     A : shape (n_states, n_states)
     B : shape (n_states, n_inputs)
 '''
-def recurisve_kalman_ls_identification(u, x, R, Q):
+def recurisve_kalman_ls_identification(u, x, R, Q, adaptive=False):
     # resulted model parameters
     n_states = x.shape[1]
     n_inputs = u.shape[1]
@@ -91,7 +91,8 @@ def recurisve_kalman_ls_identification(u, x, R, Q):
     P = numpy.eye(n_states + n_inputs) 
 
     # forgetting factor
-    lambda_val = 0.99 
+    #lambda_val = 0.99 
+    lambda_val = 0.9999
 
     num_samples = u.shape[0]
     for n in range(1, num_samples):
@@ -110,12 +111,18 @@ def recurisve_kalman_ls_identification(u, x, R, Q):
         #denom = (lambda_val + extended_x.T@P@extended_x).item()
         denom = (lambda_val + extended_x.T @ P @ extended_x + x_prev.T @ R @ x_prev).item()
 
-        if numpy.abs(denom) > 10e-4 and numpy.abs(denom) < 10e3:
+        #if numpy.abs(denom) > 10e-4 and numpy.abs(denom) < 10e3:
+        if numpy.abs(denom) > 10e-6 and numpy.abs(denom) < 10e6:
             K = (P@extended_x) / denom
             # model update
             theta += (error@K.T)
             # covariance update
             P = (1.0 / lambda_val) * (P - K@extended_x.T@P) + Q
+
+            if adaptive:
+                # adaptive noise covariance matrix
+                # r = e@e^T + CPC^T
+                R = error@error.T + P[0:n_states, 0:n_states]
 
     a_est = theta[:, 0:n_states]
     b_est = theta[:, n_states:]
