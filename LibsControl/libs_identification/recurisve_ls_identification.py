@@ -74,9 +74,9 @@ inputs :
     Q : process noise (model uncertianinty noise) covariance matrix, with shape (n_states + n_inputs, n_states + n_inputs)
 returns :
     A : shape (n_states, n_states)
-    B : shape (n_states, n_inputs)
+    B : shape (n_states, n_inputs) 
 '''
-def recurisve_kalman_ls_identification(u, x, R, Q, adaptive=False):
+def recursive_kalman_ls_identification(u, x, R, Q, adaptive=False):
     # resulted model parameters
     n_states = x.shape[1]
     n_inputs = u.shape[1]
@@ -92,7 +92,7 @@ def recurisve_kalman_ls_identification(u, x, R, Q, adaptive=False):
 
     # forgetting factor
     #lambda_val = 0.99 
-    lambda_val = 0.9999
+    lambda_val = 0.999
 
     num_samples = u.shape[0]
     for n in range(1, num_samples):
@@ -131,7 +131,7 @@ def recurisve_kalman_ls_identification(u, x, R, Q, adaptive=False):
 
 
 
-def recurisve_kalman_ls_identification_adaptive(u, x, R, Q):
+def recursive_kalman_ls_identification_adaptive(u, x, R, Q):
     # resulted model parameters
     n_states = x.shape[1]
     n_inputs = u.shape[1]
@@ -182,13 +182,3 @@ def recurisve_kalman_ls_identification_adaptive(u, x, R, Q):
 
 
 
-
-
-
-
-# Update for process noise covariance Q
-    state_residual = state_estimate - state_prediction
-    Q = Q + np.outer(K.dot(residual), state_residual)
-
-    # Update for measurement noise covariance R
-    R = R + np.outer(residual, H.dot(residual))
