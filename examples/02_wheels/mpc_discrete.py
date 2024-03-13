@@ -35,7 +35,7 @@ r_noise = 0.1*numpy.eye(ds.c.shape[0])
 
 a_disc, b_disc, c_disc = LibsControl.c2d(ds.a, ds.b, ds.c, dt)
 
-prediction_horizon = 8
+prediction_horizon = 20
 #solve MPC controller
 mpc = LibsControl.MPC(a_disc, b_disc, q, r, prediction_horizon)
 

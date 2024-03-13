@@ -18,10 +18,10 @@ class MPC:
 
     def __init__(self, a, b, q, r, prediction_horizon, antiwindup = 10**10):
         self.prediction_horizon = prediction_horizon
-        self.n_states = a.shape[0]
-        self.n_inputs = b.shape[1]
+        
+        a_aug, b_aug, q_aug = self._aug_matrices(a, b, q)
 
-        self.result_o, result_m, result_q_aug, result_r_aug = self._create_lifted_matrices(a, b, q, r, prediction_horizon)
+        self.result_o, result_m, result_q_aug, result_r_aug = self._create_lifted_matrices(a_aug, b_aug, q_aug, r, prediction_horizon)
 
 
         tmp  = result_m.T@result_q_aug@result_m + result_r_aug
@@ -29,43 +29,69 @@ class MPC:
 
         self.control_mat = tmp@result_m.T@result_q_aug
 
+        print(">>> ", self.result_o.shape, self.control_mat.shape)
+
+    #this adds integral action term into system dynamics
+    def _aug_matrices(self, a, b, q):
+        n = a.shape[0]  #system order
+        m = b.shape[1]  #inputs count
+        k = a.shape[0]  #outputs count
+
+        #matrix augmentation with integral action
+        a_aug = numpy.zeros((n+k, n+k))
+        b_aug = numpy.zeros((n+k, m))
+        q_aug = numpy.zeros((n+k, n+k))
+
+        
+        a_aug[0:n, 0:n] = a 
+
+        #add integrator into augmented a matrix
+        for i in range(n):
+            a_aug[i + n, i]     = 1.0
+            a_aug[i + n, i + n] = 1.0
+
+        b_aug[0:n,0:m]  = b
+
+        #project Q matric to output, and fill augmented q matrix
+        q_aug[n:, n:] = q
+
+        return a_aug, b_aug, q_aug
+
 
 
     def _create_lifted_matrices(self, a, b, q, r, prediction_horizon):
-      
+        n_states = a.shape[0]
+        n_inputs = b.shape[1]
 
-        result_o = numpy.zeros((self.n_states*prediction_horizon, self.n_states))        
+
+        result_o = numpy.zeros((n_states*prediction_horizon, n_states))        
         for n in range(prediction_horizon):
-            ofs = n*self.n_states
-            
-            #result_o[ofs:ofs + self.n_states, :] = a**(n+1)
-            result_o[ofs:ofs + self.n_states, :] = numpy.linalg.matrix_power(a, n+1)
+            ofs = n*n_states
+            result_o[ofs:ofs + n_states, :] = a**(n+1)
 
        
-        result_m = numpy.zeros((self.n_states*prediction_horizon, self.n_inputs*prediction_horizon))
+        result_m = numpy.zeros((n_states*prediction_horizon, n_inputs*prediction_horizon))
 
         for m in range(prediction_horizon):
             for n in range(prediction_horizon):
                 if m >= n:
                     a_pow = max(m - n, 0)
                     
-                    ofs_m = m*self.n_states
-                    ofs_n = n*self.n_inputs
+                    ofs_m = m*n_states
+                    ofs_n = n*n_inputs
                     
-                    #result_m[ofs_m:ofs_m + self.n_states, ofs_n:ofs_n + self.n_inputs] = (a**a_pow)@b
-                    result_m[ofs_m:ofs_m + self.n_states, ofs_n:ofs_n + self.n_inputs] = numpy.linalg.matrix_power(a, a_pow)@b
-                    
+                    result_m[ofs_m:ofs_m + n_states, ofs_n:ofs_n + n_inputs] = (a**a_pow)@b
 
 
-        result_q_aug = numpy.zeros((self.n_states*prediction_horizon, self.n_states*prediction_horizon))
+        result_q_aug = numpy.zeros((n_states*prediction_horizon, n_states*prediction_horizon))
         for n in range(prediction_horizon):
-            ofs = n*self.n_states
-            result_q_aug[ofs:ofs+self.n_states, ofs:ofs+self.n_states] = q
+            ofs = n*n_states
+            result_q_aug[ofs:ofs+n_states, ofs:ofs+n_states] = q
 
-        result_r_aug = numpy.zeros((self.n_inputs*prediction_horizon, self.n_inputs*prediction_horizon))
+        result_r_aug = numpy.zeros((n_inputs*prediction_horizon, n_inputs*prediction_horizon))
         for n in range(prediction_horizon):
-            ofs = n*self.n_inputs
-            result_r_aug[ofs:ofs+self.n_inputs, ofs:ofs+self.n_inputs] = r
+            ofs = n*n_inputs
+            result_r_aug[ofs:ofs+n_inputs, ofs:ofs+n_inputs] = r
 
         
         return result_o, result_m, result_q_aug, result_r_aug

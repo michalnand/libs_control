@@ -47,19 +47,19 @@ class LQGDiscrete:
         integral_action_new = integral_action + self.ki@error
 
         # LQR controll law 
-        u = -self.k@x_hat + integral_action_new
+        u_new = -self.k@x_hat + integral_action_new
 
         # antiwindup with conditional integration
-        u_clip = numpy.clip(u, -self.antiwindup, self.antiwindup)
-        integral_action_result = integral_action_new - (u - u_clip)
+        u = numpy.clip(u_new, -self.antiwindup, self.antiwindup)
+        integral_action_new = integral_action_new - (u_new - u)
     
         # kalman observer
         # only y is known, and using knowledge of dynamics, 
         # the full state x_hat can be reconstructed
         prediction_error = y - self.c@x_hat
-        x_hat_new = self.a@x_hat + self.b@u_clip + self.f@prediction_error
+        x_hat_new = self.a@x_hat + self.b@u + self.f@prediction_error
 
-        return u_clip, integral_action_result, x_hat_new
+        return u, integral_action_new, x_hat_new
 
 
     '''

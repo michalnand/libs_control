@@ -16,8 +16,11 @@ R matrix, shape (n_inputs, n_inputs)
 ''' 
 class LQRDiscrete:
 
-    def __init__(self, a, b, q, r):
+    def __init__(self, a, b, q, r, antiwindup = 10**10):
         self.k, self.ki = self.solve(a, b, q, r)
+
+        self.antiwindup = antiwindup
+
 
     '''
     inputs:
@@ -35,7 +38,11 @@ class LQRDiscrete:
         integral_action_new = integral_action + self.ki@error
 
         #LQR controll law
-        u = -self.k@x + integral_action_new
+        u_new = -self.k@x + integral_action
+
+        #conditional antiwindup
+        u = numpy.clip(u_new, -self.antiwindup, self.antiwindup)
+        integral_action_new = integral_action_new - (u_new - u)
 
         return u, integral_action_new
 

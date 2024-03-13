@@ -50,7 +50,29 @@ def get_poles_mesh(a, b, c, step = 0.04):
 
     return scale, y
 
-def plot_poles(re_ol, im_ol, re_cl, im_cl, file_name):
+def plot_poles(re_ol, im_ol, file_name):
+    plt.clf()
+
+    fig, axs = plt.subplots(1, 1, figsize=(5, 5))
+
+    x_range = max(numpy.abs(re_ol))
+    y_range = max(numpy.abs(im_ol))
+    
+    axs.set_xlim([-1.2, 1.2])
+    axs.set_ylim([-1.2, 1.2])
+    axs.scatter(re_ol, im_ol, s = 50, alpha=1.0)
+
+    for i in range(im_ol.shape[0]):
+        axs.annotate(str(i), (re_ol[i], im_ol[i] + 0.1*((i%2) - 1)))
+
+    axs.grid(True)
+    axs.set_xlabel("real") 
+    axs.set_ylabel("imag")
+ 
+    plt.tight_layout()
+    plt.savefig(file_name, dpi = 300)
+
+def plot_poles_cl(re_ol, im_ol, re_cl, im_cl, file_name):
     plt.clf()
 
     fig, axs = plt.subplots(1, 1, figsize=(5, 5))
@@ -58,16 +80,16 @@ def plot_poles(re_ol, im_ol, re_cl, im_cl, file_name):
     x_range = max(numpy.abs(numpy.hstack([re_ol, re_cl])))
     y_range = max(numpy.abs(numpy.hstack([im_ol, im_cl])))
     
-    axs.set_xlim([-1.2*x_range, 1.2*x_range])
-    axs.set_ylim([-1.2*y_range, 1.2*y_range])
+    axs.set_xlim([-1.2, 1.2])
+    axs.set_ylim([-1.2, 1.2])
     axs.scatter(re_ol, im_ol, label="open loop", s = 50, alpha=1.0)
     axs.scatter(re_cl, im_cl, label="closed loop", s = 25, alpha=1.0)
 
     for i in range(im_ol.shape[0]):
-        axs.annotate(str(i), (re_ol[i], im_ol[i] + 0.3*((i%3) - 1)))
+        axs.annotate(str(i), (re_ol[i], im_ol[i] + 0.3*((i%2) - 1)))
 
     for i in range(im_cl.shape[0]):
-        axs.annotate(str(i), (re_cl[i], im_cl[i] + 0.3*((i%3) - 1)))
+        axs.annotate(str(i), (re_cl[i], im_cl[i] + 0.3*((i%2) - 1)))
 
     axs.grid(True)
     axs.set_xlabel("real") 

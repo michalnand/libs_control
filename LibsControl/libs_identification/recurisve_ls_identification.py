@@ -30,7 +30,7 @@ def recursive_ls_identification(u, x):
     P = numpy.eye(n_states + n_inputs) 
 
     # forgetting factor
-    lambda_val = 0.99 
+    lambda_val = 0.998
 
     num_samples = u.shape[0]
     for n in range(1, num_samples):
@@ -47,7 +47,8 @@ def recursive_ls_identification(u, x):
 
         # Kalman gain    
         denom = (lambda_val + extended_x.T@P@extended_x).item()
-        if numpy.abs(denom) > 10e-4 and numpy.abs(denom) < 10e3:
+        #if numpy.abs(denom) > 10e-4 and numpy.abs(denom) < 10e3:
+        if numpy.abs(denom) > 10e-8 and numpy.abs(denom) < 10e8:
             K = (P@extended_x) / denom
             # model update
             theta += (error@K.T)
@@ -92,7 +93,7 @@ def recursive_kalman_ls_identification(u, x, R, Q, adaptive=False):
 
     # forgetting factor
     #lambda_val = 0.99 
-    lambda_val = 0.999
+    lambda_val = 0.998
 
     num_samples = u.shape[0]
     for n in range(1, num_samples):
@@ -110,15 +111,15 @@ def recursive_kalman_ls_identification(u, x, R, Q, adaptive=False):
         # Kalman gain    
         #denom = (lambda_val + extended_x.T@P@extended_x).item()
         denom = (lambda_val + extended_x.T @ P @ extended_x + x_prev.T @ R @ x_prev).item()
-
+        
         #if numpy.abs(denom) > 10e-4 and numpy.abs(denom) < 10e3:
-        if numpy.abs(denom) > 10e-6 and numpy.abs(denom) < 10e6:
+        if numpy.abs(denom) > 10e-8 and numpy.abs(denom) < 10e8:
             K = (P@extended_x) / denom
             # model update
-            theta += (error@K.T)
+            theta += (error@K.T) 
             # covariance update
             P = (1.0 / lambda_val) * (P - K@extended_x.T@P) + Q
-
+            
             if adaptive:
                 # adaptive noise covariance matrix
                 # r = e@e^T + CPC^T
@@ -130,7 +131,7 @@ def recursive_kalman_ls_identification(u, x, R, Q, adaptive=False):
 
 
 
-
+'''
 def recursive_kalman_ls_identification_adaptive(u, x, R, Q):
     # resulted model parameters
     n_states = x.shape[1]
@@ -174,11 +175,10 @@ def recursive_kalman_ls_identification_adaptive(u, x, R, Q):
 
             #Q = Q + numpy.outer(K.dot(error), error)
             #R = R + numpy.outer(K.dot(error), error)
-            R = R + error@K@error
+            #R = R + error@K@error
 
     a_est = theta[:, 0:n_states]
     b_est = theta[:, n_states:]
     return a_est, b_est
-
-
+'''
 
