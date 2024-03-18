@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import LibsControl
 
 
-dt = 0.001 
+dt = 0.01 
 
 # create dynamical system
 # dx = Ax + Bu
@@ -21,8 +21,8 @@ K = 0.3     #motor constant (N.m.A^-1)
 R = 2.0     #wiring resitance, (ohm)
 L = 0.4     #wiring inductance, (H)
 
-#mat_a[0][0] = -0.3
 mat_a[0][1] = 1.0
+mat_a[0][0] = 0.0 #-2.3
 
 mat_a[1][1] = -b/J
 mat_a[1][2] = K/J
@@ -32,33 +32,40 @@ mat_a[2][2] = -R/L
 
 mat_b[2][0] = 1.0/L
 
+mat_c = numpy.eye(mat_a.shape[0])
+
 
 #create dynamical system
 ds = LibsControl.DynamicalSystem(mat_a, mat_b, None, dt)
+
+a_disc, b_disc, c_disc = LibsControl.c2d(mat_a, mat_b, mat_c, dt)
+
+#ds = LibsControl.DynamicalSystemDiscrete(a_disc, b_disc, c_disc)
 
 print(ds)
 
 
 #create loss weighting matrices (diagonal)
 q = numpy.array([ [1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ] )
-r = numpy.array( [ [10**-5] ]) 
+r = numpy.array( [ [10**-1] ]) 
 
-a_disc, b_disc, c_disc = LibsControl.c2d(ds.a, ds.b, ds.c, dt)
+
+
 
 #solve LQR controller
-mpc = LibsControl.MPC(a_disc, b_disc, q, r, 32)
+mpc = LibsControl.MPC(a_disc, b_disc, q, r, 128)
 
 
 
 #process simulation
 
-n_max = 10000
+n_max = 1000
 
 #required state, 100degrees
 xr = numpy.zeros((mat_a.shape[0], 1))
 xr[0][0] = 100.0*numpy.pi/180.0
 
-
+u = numpy.zeros((mat_b.shape[1], 1))
 
 
 #result log
@@ -76,18 +83,20 @@ for n in range(n_max):
     x = ds.x
 
     #compute controller output
-    u = mpc.forward(xr, x)
+    u = mpc.forward(xr, x, u)
     
     #compute plant output
+    #x, y = ds.forward_state(u)
     x, y = ds.forward_state(u)
   
     #add constant disturbance in middle
-    #if n > n_max//2:
-    #    x[0]+= 0.1*numpy.pi/180.0
+    if n > n_max//2:
+        x[0]+= 0.1*numpy.pi/180.0
 
     t_result.append(n*dt)
     u_result.append(u[:, 0].copy())
     x_result.append(x[:, 0].copy())
+
     
     
 t_result = numpy.array(t_result)

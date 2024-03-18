@@ -26,21 +26,17 @@ q = numpy.array([   [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] ] )
     
-r = numpy.array( [ [0.1, 0.0], [0.0, 0.1] ]) 
-
-#process and observation noise covariance
-q_noise = 0.1*numpy.eye(ds.a.shape[0]) 
-r_noise = 0.1*numpy.eye(ds.c.shape[0]) 
+r = numpy.array( [ [10000.0, 0.0], [0.0, 10000.0] ]) 
 
 
 a_disc, b_disc, c_disc = LibsControl.c2d(ds.a, ds.b, ds.c, dt)
 
-prediction_horizon = 20
+prediction_horizon = 32
 #solve MPC controller
 mpc = LibsControl.MPC(a_disc, b_disc, q, r, prediction_horizon)
 
 
- 
+    
 
 
 #process simulation
@@ -50,11 +46,10 @@ n_max = 5000
 #required output, 1 rad for all wheels
 xr = numpy.array([[1.0, 1.0, 1.0, 0.0, 0.0, 0.0]]).T
 
-#observed state
-x_hat = torch.zeros((ds.a.shape[0], 1), dtype=torch.float32)
 
+u = numpy.zeros((b_disc.shape[1], 1))
 
-#result log
+#result log 
 t_result = []
 u_result = []
 x_result = []
@@ -68,12 +63,10 @@ ds.reset(x_initial)
 y = ds.y
 
 for n in range(n_max):
-    print("n = ", n)
-
     x = ds.x
 
     #compute controller output
-    u = mpc.forward(xr, x)
+    u = mpc.forward(xr, x, u)
     
     #compute plant output
     x, y = ds.forward_state(u)
