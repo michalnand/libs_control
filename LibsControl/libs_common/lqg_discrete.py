@@ -3,7 +3,7 @@ import scipy
 
 
 '''
-solve LQG controller for contunuous discrete system
+solve LQG controller for discrete system
 x(n+1) = Ax(n) + Bu(n)
 y(n) = Cx(n)
 

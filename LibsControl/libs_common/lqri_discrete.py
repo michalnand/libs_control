@@ -13,16 +13,11 @@ B matrix, shape (n_states, n_inputs)
 
 Q matrix, shape (n_states, n_states)
 R matrix, shape (n_inputs, n_inputs)
-
-control law : 
-e_sum(n)= e_sum(n-1) + xr(n) - x(n)
-u(n)    = -K*x(n) + Ki*e_sum(n)
-
-'''  
-class LQRDiscrete:
+''' 
+class LQRIDiscrete:
 
     def __init__(self, a, b, q, r, antiwindup = 10**10):
-        self.k, self.ki = self.solve(a, b, q, r)
+        self.ki, self.k = self.solve(a, b, q, r)
 
         self.antiwindup = antiwindup
 
@@ -37,19 +32,17 @@ class LQRDiscrete:
         u : input into plant, shape (n_inputs, 1)
         integral_action_new : new IA, shape (n_inputs, 1)
     '''
-    def forward(self, xr, x, integral_action):
-        #integral action
+    def forward(self, xr, x, u_prev):
+        
         error = xr - x
-        integral_action_new = integral_action + self.ki@error
 
-        #LQR controll law
-        u_new = -self.k@x + integral_action
+        du = self.k@error - self.ki@u_prev
+        u  = u_prev + du
 
         #conditional antiwindup
-        u = numpy.clip(u_new, -self.antiwindup, self.antiwindup)
-        integral_action_new = integral_action_new - (u_new - u)
-
-        return u, integral_action_new
+        u = numpy.clip(u, -self.antiwindup, self.antiwindup)
+        
+        return u
 
 
     '''
@@ -61,37 +54,45 @@ class LQRDiscrete:
 
         n = a.shape[0]  #system order
         m = b.shape[1]  #inputs count
-        k = a.shape[0]  #outputs count
 
         #matrix augmentation with integral action
-        a_aug = numpy.zeros((n+k, n+k))
-        b_aug = numpy.zeros((n+k, m))
-        q_aug = numpy.zeros((n+k, n+k))
+        a_aug = numpy.zeros((m+n, m+n))
+        b_aug = numpy.zeros((m+n, m))
+        q_aug = numpy.zeros((m+n, m+n))
 
-        
-        a_aug[0:n, 0:n] = a 
+        #add integrator into augmented A matrix
+        for i in range(m):
+            a_aug[i, i] = 1.0
 
-        #add integrator into augmented a matrix
-        for i in range(n):
-            a_aug[i + n, i]     = 1.0
-            a_aug[i + n, i + n] = 1.0
+        #place A matrix in
+        a_aug[m:, m:] = a
 
-        b_aug[0:n,0:m]  = b
+        #place B matrix in
+        a_aug[m:, 0] = b[:, 0]
 
+
+        #add integrator into augmented B matrix
+        for i in range(m):
+            b_aug[i, i] = 1.0
+           
         #project Q matric to output, and fill augmented q matrix
-        q_aug[n:, n:] = q
+        q_aug[m:, m:] = q
 
         # discrete-time algebraic Riccati equation solution
         p = scipy.linalg.solve_discrete_are(a_aug, b_aug, q_aug, r)
 
         # compute the LQR gain
-        ki_tmp =  numpy.linalg.inv(r)@(b_aug.T@p)
+        k_tmp = numpy.linalg.inv(r)@(b_aug.T@p)
 
-        #truncated small elements
-        ki_tmp[numpy.abs(ki_tmp) < 10**-10] = 0
+        #truncate small elements (due numerical errors)
+        #k[numpy.abs(k) < 10**-10] = 0
 
+     
         #split ki for k and integral action part ki
-        k   = ki_tmp[:, 0:a.shape[0]]
-        ki  = ki_tmp[:, a.shape[0]:]
+        ki  = k_tmp[:, 0:m]
+        k   = k_tmp[:, m:]
 
-        return k, ki
+        print(k_tmp)
+
+
+        return ki, k

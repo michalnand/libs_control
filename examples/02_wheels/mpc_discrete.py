@@ -7,7 +7,7 @@ import LibsControl
 
 from wheels import *
 
-dt = 0.001 
+dt = 1.0/250.0
 
 
 #three wheels connected with springs and controlled with two motors
@@ -26,12 +26,12 @@ q = numpy.array([   [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] ] )
     
-r = numpy.array( [ [10000.0, 0.0], [0.0, 10000.0] ]) 
+r = numpy.array( [ [10**-2, 0.0], [0.0, 10**-2] ]) 
 
 
 a_disc, b_disc, c_disc = LibsControl.c2d(ds.a, ds.b, ds.c, dt)
 
-prediction_horizon = 32
+prediction_horizon = 128
 #solve MPC controller
 mpc = LibsControl.MPC(a_disc, b_disc, q, r, prediction_horizon)
 
@@ -41,12 +41,10 @@ mpc = LibsControl.MPC(a_disc, b_disc, q, r, prediction_horizon)
 
 #process simulation
 
-n_max = 5000
+n_max = 1000
 
 #required output, 1 rad for all wheels
 xr = numpy.array([[1.0, 1.0, 1.0, 0.0, 0.0, 0.0]]).T
-
-
 u = numpy.zeros((b_disc.shape[1], 1))
 
 #result log 
@@ -89,35 +87,26 @@ LibsControl.plot_closed_loop_response(t_result, u_result, x_result, x_hat = None
 
 
 
-'''
+
 #run demo
+
+#required output, 1 rad for all wheels
+xr = numpy.array([[1.0, 1.0, 1.0, 0.0, 0.0, 0.0]]).T
+u = numpy.zeros((b_disc.shape[1], 1))
+
 
 #random initial state
 x_initial = numpy.random.randn(ds.a.shape[0], 1)
 ds.reset(x_initial)
 
-#required output, 1 rad for all wheels
-yr = numpy.array([[1.0, 1.0, 1.0]]).T
 
-#observed state
-x_hat = numpy.zeros((ds.a.shape[0], 1))
-
-#initial error integral
-integral_action = numpy.zeros((ds.b.shape[1], 1))
-
-
-#plant output
-y = ds.y
-
-disturbance = 0
 
 n = 0
 
 while True:
     #compute controller output
-    u, integral_action, x_hat = mpc.forward(yr, y, integral_action, x_hat)
+    u = mpc.forward(xr, x, u)
     
-    u+= disturbance
     #compute plant output
     x, y = ds.forward_state(u)
 
@@ -125,6 +114,5 @@ while True:
         ds.render()
 
     n+= 1
-    if n%4000 == 0:
-        disturbance = 50*(2.0*numpy.random.rand(2, 1) - 1.0)
-'''
+    if n%1000 == 0:
+        xr = -xr

@@ -30,6 +30,7 @@ class MPC:
         #cut only part for u(n) (we dont care to compute future u(n+1...))
         self.sigma = sigma[0:self.n_inputs, :]
 
+        self.xr_aug = numpy.zeros((self.n_states*self.prediction_horizon, 1))
 
     
     def _matrix_augmentation(self, a, b, q, r, prediction_horizon):
@@ -38,8 +39,6 @@ class MPC:
         for n in range(prediction_horizon):
             ofs = n*self.n_states
             result_phi[ofs:ofs + self.n_states, :] = numpy.linalg.matrix_power(a, n+1)
-
-        print("result_phi = ", result_phi.shape)
 
         result_omega = numpy.zeros((self.n_states*prediction_horizon, self.n_inputs))        
         for n in range(prediction_horizon):
@@ -50,11 +49,6 @@ class MPC:
                 tmp+= numpy.linalg.matrix_power(a, i+1)@b
 
             result_omega[ofs:ofs + self.n_states, :] = tmp
-
-
-
-        print("result_omega = ", result_omega.shape)
-
 
         result_theta = numpy.zeros((self.n_states*prediction_horizon, self.n_inputs*prediction_horizon))
         for m in range(prediction_horizon):
@@ -69,10 +63,6 @@ class MPC:
                     tmp+= numpy.linalg.matrix_power(a, i+1)@b
 
                 result_theta[ofs_m:ofs_m + self.n_states, ofs_n:ofs_n + self.n_inputs] = tmp
-
-
-        print("result_theta = ", result_theta.shape)
-
            
         result_q_aug = numpy.zeros((self.n_states*prediction_horizon, self.n_states*prediction_horizon))
         for n in range(prediction_horizon):
@@ -84,18 +74,18 @@ class MPC:
         for n in range(prediction_horizon):
             ofs = n*self.n_inputs
             result_r_aug[ofs:ofs+self.n_inputs, ofs:ofs+self.n_inputs] = r
-
-            
+   
         return result_phi, result_omega, result_theta, result_q_aug, result_r_aug
     
+    
     def forward(self, xr, x, u_prev):   
-        
-        xr_aug = numpy.zeros((self.n_states*self.prediction_horizon, 1))
+        #tile xr into xr_aug
         for n in range(self.prediction_horizon):
             ofs = n*self.n_states
-            xr_aug[ofs:ofs + self.n_states, :] = xr.copy()
+            self.xr_aug[ofs:ofs + self.n_states, :] = xr.copy()
 
-        s  = xr_aug - self.phi@x - self.omega@u_prev
+
+        s  = self.xr_aug - self.phi@x - self.omega@u_prev
         du = self.sigma@s
         u  = u_prev + du
 
@@ -135,8 +125,8 @@ class MPC:
     
 
 if __name__ == "__main__":
-    n_states = 7
-    n_inputs = 3
+    n_states = 4
+    n_inputs = 2
 
     a = numpy.random.randn(n_states, n_states)
     b = numpy.random.randn(n_states, n_inputs)
@@ -144,7 +134,7 @@ if __name__ == "__main__":
     q = numpy.eye(n_states, n_states)
     r = numpy.eye(n_inputs, n_inputs)
 
-    mpc = MPC(a, b, q, r, 10)
+    mpc = MPC(a, b, q, r, 64)
 
     
 
