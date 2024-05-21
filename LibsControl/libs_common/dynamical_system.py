@@ -33,6 +33,9 @@ class DynamicalSystem:
 
         self.dt = dt
 
+        self.x = numpy.zeros((self.a.shape[0], 1))
+        
+
 
     def __repr__(self):
 

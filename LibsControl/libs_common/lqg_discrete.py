@@ -42,7 +42,7 @@ class LQGDiscrete:
     '''
     def forward(self, yr, y, integral_action, x_hat):
       
-        # integral action  
+        # integral action   
         error = yr - y
         integral_action_new = integral_action + self.ki@error
 

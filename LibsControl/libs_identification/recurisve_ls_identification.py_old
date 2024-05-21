@@ -30,7 +30,7 @@ def recursive_ls_identification(u, x):
     P = numpy.eye(n_states + n_inputs) 
 
     # forgetting factor
-    lambda_val = 0.998
+    lambda_val = 0.9998
 
     num_samples = u.shape[0]
     for n in range(1, num_samples):
@@ -77,10 +77,15 @@ returns :
     A : shape (n_states, n_states)
     B : shape (n_states, n_inputs) 
 '''
-def recursive_kalman_ls_identification(u, x, R, Q, adaptive=False):
+def recursive_kalman_ls_identification(u, x): #, R, Q, adaptive=False):
     # resulted model parameters
     n_states = x.shape[1]
     n_inputs = u.shape[1]
+
+    adaptive = False
+
+    R = (0.001**0.5)*numpy.eye(n_states)
+    Q = (10**-10) #*(0.1**0.5)*numpy.eye(n_states + n_inputs)
 
     theta = numpy.zeros((n_states, n_states + n_inputs))
     
@@ -93,7 +98,7 @@ def recursive_kalman_ls_identification(u, x, R, Q, adaptive=False):
 
     # forgetting factor
     #lambda_val = 0.99 
-    lambda_val = 0.998
+    lambda_val = 0.9998
 
     num_samples = u.shape[0]
     for n in range(1, num_samples):
