@@ -53,7 +53,7 @@ for n in range(1000):
     x, _ = ds.forward_state(u)
 
     #ds.render()
-    if n%5 == 0:
+    if n%1 == 0:
         u = 0.1*numpy.random.randint(0, 3, (ds.b.shape[1], 1)) - 1
     
     u_seq.append(u[:, 0])
