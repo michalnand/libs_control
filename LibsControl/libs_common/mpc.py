@@ -12,16 +12,17 @@ B matrix, shape (n_states, n_inputs)
 Q matrix, shape (n_states, n_states)
 R matrix, shape (n_inputs, n_inputs)
 ''' 
-class MPC:
+class MPC: 
 
-    def __init__(self, a, b, q, r, prediction_horizon, antiwindup = 10**10):
+    def __init__(self, a, b, q, r, control_horizon, prediction_horizon, antiwindup = 10**10):
+        self.control_horizon    = control_horizon
         self.prediction_horizon = prediction_horizon
         self.antiwindup         = antiwindup
 
         self.n_states = a.shape[0]
         self.n_inputs = b.shape[1]  
 
-        self.phi, self.omega, theta, q_aug, r_aug = self._matrix_augmentation(a, b, q, r, prediction_horizon)
+        self.phi, self.omega, theta, q_aug, r_aug = self._matrix_augmentation(a, b, q, r, control_horizon, prediction_horizon)
 
         
         h = (theta.T@q_aug@theta) + r_aug
@@ -33,7 +34,7 @@ class MPC:
         self.xr_aug = numpy.zeros((self.n_states*self.prediction_horizon, 1))
 
     
-    def _matrix_augmentation(self, a, b, q, r, prediction_horizon):
+    def _matrix_augmentation(self, a, b, q, r, control_horizon, prediction_horizon):
       
         result_phi = numpy.zeros((self.n_states*prediction_horizon, self.n_states))        
         for n in range(prediction_horizon):
@@ -52,7 +53,9 @@ class MPC:
 
         result_theta = numpy.zeros((self.n_states*prediction_horizon, self.n_inputs*prediction_horizon))
         for m in range(prediction_horizon):
-            for n in range(m + 1):
+            tmp = min(m + 1, control_horizon)
+            #r = m+1
+            for n in range(tmp):
                 a_pow = m - n
 
                 ofs_m = m*self.n_states
@@ -83,6 +86,20 @@ class MPC:
         for n in range(self.prediction_horizon):
             ofs = n*self.n_states
             self.xr_aug[ofs:ofs + self.n_states, :] = xr.copy()
+
+        s  = self.xr_aug - self.phi@x - self.omega@u_prev
+        du = self.sigma@s
+        u  = u_prev + du
+
+        return u
+    
+
+    def forward_trajectory(self, xr, x, u_prev):   
+        #tile xr into xr_aug
+
+        for n in range(self.prediction_horizon):
+            ofs = n*self.n_states
+            self.xr_aug[ofs:ofs + self.n_states, :] = xr[n].copy()
 
 
         s  = self.xr_aug - self.phi@x - self.omega@u_prev

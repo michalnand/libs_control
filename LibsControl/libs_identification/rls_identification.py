@@ -115,12 +115,15 @@ Expectation-Maximization algorithm :
         x_est = kalman_filter(u, x, a_est, b_est, q, r)
         a_est, b_est = rls_identification(u, x_est, a_initial = a_est, b_initial = b_est)  
 '''
-def krls_identification(u, x, num_iterations = 10, alpha = 0.95):    
+def krls_identification(u, x, r_initial = None, num_iterations = 10, alpha = 0.95):    
     n_states  = x.shape[1]
 
-   
-    q = (10**-20)*numpy.eye(n_states)
-    r = 0.1*numpy.eye(n_states)
+    q = (10**-12)*numpy.eye(n_states)
+
+    if r_initial is None:
+        r = (0.01)*numpy.eye(n_states)
+    else:
+        r = r_initial.copy()
     
     #initial estimation
     a_est, b_est = None, None

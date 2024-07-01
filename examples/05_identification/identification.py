@@ -12,7 +12,7 @@ def identification_test(u_seq, x_gt, x_input, identification_func):
     a_model, b_model = identification_func(u_seq, x_input)
 
     x_pred       = numpy.zeros(x_input.shape)
-    x_pred[0, :] = x_input[0, :]
+    x_pred[0, :] = x_input[0, :]    
     for n in range(x_pred.shape[0]-1):
         x_pred[n + 1] = a_model@x_pred[n] + b_model@u_seq[n]
 
@@ -22,14 +22,11 @@ def identification_test(u_seq, x_gt, x_input, identification_func):
 
     error_seq = error.sum(axis=1)
 
-    
     print("\n\n")
     print(numpy.round(a_model, 5))
     print(numpy.round(b_model, 5))
     print("\n\n")
     
-    
-
     return round(error_mse, 4), round(error_mape, 4), error_seq
 
 
@@ -53,8 +50,10 @@ for n in range(1000):
     x, _ = ds.forward_state(u)
 
     #ds.render()
-    if n%1 == 0:
+    if n%10 == 0:
         u = 0.1*numpy.random.randint(0, 3, (ds.b.shape[1], 1)) - 1
+
+    u = numpy.random.randn(ds.b.shape[1], 1)
     
     u_seq.append(u[:, 0])
     x_seq.append(x[:, 0])
@@ -76,7 +75,7 @@ print(numpy.round(b_ref, 5))
 
 #noise level percent
 #noise_levels = [0.0, 0.001, 0.01, 0.1]
-noise_levels = [0.01]
+noise_levels = [0.1]
 
 for noise_level in noise_levels:
     x_noise  = noise_level*numpy.random.randn(x_seq.shape[0], x_seq.shape[1])

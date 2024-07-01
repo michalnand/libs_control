@@ -36,7 +36,9 @@ prediction_horizon = 128
 mpc = LibsControl.MPC(a_disc, b_disc, q, r, prediction_horizon)
 
 
-    
+print(mpc.phi.shape) 
+print(mpc.omega.shape) 
+print(mpc.sigma.shape) 
 
 
 #process simulation

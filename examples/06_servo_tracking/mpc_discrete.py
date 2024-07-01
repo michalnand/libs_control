@@ -45,13 +45,13 @@ print(ds)
 
 #create loss weighting matrices (diagonal)
 q = numpy.array([ [1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ] )
-r = numpy.array( [ [10**-10] ]) 
+r = numpy.array( [ [1] ]) 
 
 
 
 
 #solve LQR controller
-mpc = LibsControl.MPC(a_disc, b_disc, q, r, 1, 32)
+mpc = LibsControl.MPC(a_disc, b_disc, q, r, 64)
 
 print(mpc.phi.shape)
 print(mpc.omega.shape)

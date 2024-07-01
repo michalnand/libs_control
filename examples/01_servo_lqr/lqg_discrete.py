@@ -45,7 +45,7 @@ print(ds)
 
 #create loss weighting matrices (diagonal)
 q = numpy.array([ [1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ] )
-r = numpy.array( [ [200.0] ]) 
+r = numpy.array( [ [10000.0] ]) 
 
 #process and observation noise covariance
 q_noise = 0.001*numpy.eye(ds.a.shape[0]) 
@@ -103,9 +103,9 @@ for n in range(n_max):
     #compute plant output
     x, y = ds.forward_state(u)
   
-    #add constant distrubance in middle
+    #add constant disturbance in middle
     if n > n_max//2:
-        x[0]+= 1.1*numpy.pi/180.0
+        x[0]+= 0.5*numpy.pi/180.0
 
     t_result.append(n*dt)
     u_result.append(u[:, 0].copy())
