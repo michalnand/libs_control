@@ -45,7 +45,7 @@ print(ds)
 
 #create loss weighting matrices (diagonal)
 q = numpy.array([ [1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ] )
-r = numpy.array( [ [10000.0] ]) 
+r = numpy.array( [ [200.0] ]) 
 
 #process and observation noise covariance
 q_noise = 0.001*numpy.eye(ds.a.shape[0]) 
@@ -55,7 +55,7 @@ r_noise = 0.1*numpy.eye(ds.c.shape[0])
 a_disc, b_disc, c_disc = LibsControl.c2d(ds.a, ds.b, ds.c, dt)
 
 #solve LQG controller
-lqg = LibsControl.LQGDiscrete(a_disc, b_disc, c_disc, q, r, q_noise, r_noise)
+lqg = LibsControl.LQGDiscrete(a_disc, b_disc, c_disc, q, r, q_noise, r_noise, 10**10, 0.05)
 
 
 print("k  = ", lqg.k)

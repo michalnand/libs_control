@@ -5,6 +5,14 @@ import matplotlib.pyplot as plt
 import LibsControl
 
 
+def compute_jerk(x, dt):
+
+    v   = (x[1:, :] - x[0:-1, :])/dt
+    acc = (v[1:, :] - v[0:-1, :])/dt
+    jerk= (acc[1:, :] - acc[0:-1, :])/dt
+
+    return jerk
+
 dt = 0.001 
 
 # create dynamical system
@@ -45,7 +53,7 @@ r = numpy.array( [ [200.0] ])
 a_disc, b_disc, c_disc = LibsControl.c2d(ds.a, ds.b, ds.c, dt)
 
 #solve LQR controller
-lqr = LibsControl.LQRDiscrete(a_disc, b_disc, q, r)
+lqr = LibsControl.LQRDiscrete(a_disc, b_disc, q, r, 10**10, 0.05)
 
 
 print("k  = ", lqr.k)
@@ -106,3 +114,8 @@ x_result[:, 1]*= 180.0/numpy.pi
 
 #plot results
 LibsControl.plot_closed_loop_response(t_result, u_result, x_result, x_hat = None, file_name = "lqr_discrete_output.png", u_labels = "voltage [V]", x_labels = ["position [deg]", "velocity [deg/s]", "current [A]"])
+
+
+
+jerk_result = compute_jerk(x_result, dt)
+print("total jerk = ", numpy.abs(jerk_result[:, 0]).sum())

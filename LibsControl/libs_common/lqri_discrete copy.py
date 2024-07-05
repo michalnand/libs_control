@@ -42,7 +42,7 @@ class LQRIDiscrete:
         #conditional antiwindup
         u = numpy.clip(u, -self.antiwindup, self.antiwindup)
         
-        return u, du
+        return u
 
 
     '''

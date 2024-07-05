@@ -21,10 +21,11 @@ u(n)    = -K*x(n) + Ki*e_sum(n)
 '''  
 class LQRDiscrete:
 
-    def __init__(self, a, b, q, r, antiwindup = 10**10):
+    def __init__(self, a, b, q, r, antiwindup = 10**10, di_max = 10**10):
         self.k, self.ki = self.solve(a, b, q, r)
 
         self.antiwindup = antiwindup
+        self.di_max     = di_max
 
 
     '''
@@ -40,7 +41,12 @@ class LQRDiscrete:
     def forward(self, xr, x, integral_action):
         #integral action
         error = xr - x
-        integral_action_new = integral_action + self.ki@error
+
+        dintegral_action    = self.ki@error
+
+        #kick clipping
+        dintegral_action    = numpy.clip(dintegral_action, -self.di_max , self.di_max)
+        integral_action_new = integral_action + dintegral_action
 
         #LQR controll law
         u_new = -self.k@x + integral_action

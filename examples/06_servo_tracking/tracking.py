@@ -46,10 +46,10 @@ print("\n\n")
 
 #create loss weighting matrices (diagonal)
 q = numpy.array([ [1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ] )
-r = numpy.array( [ [0.1] ]) 
+r = numpy.array( [ [0.01] ]) 
 
 #solve LQR controller
-lqr = LibsControl.LQRIDiscrete(a_disc, b_disc, q, r)
+lqr = LibsControl.LQRDiscrete(a_disc, b_disc, q, r)
 
 
 #create loss weighting matrices (diagonal)
@@ -77,7 +77,7 @@ for i in range(n_max//3):
 
 
 #initial integral action
-u = numpy.zeros((mat_b.shape[1], 1))
+integral_action = numpy.zeros((mat_b.shape[1], 1))
 
 #result log
 lqr_t_result = []
@@ -94,7 +94,7 @@ for n in range(n_max):
     x = ds.x
 
     #compute controller output
-    u = lqr.forward(xr_trajectory[n], x, u)
+    u, integral_action = lqr.forward(xr_trajectory[n], x, integral_action)
     
     #compute plant output   
     x, y = ds.forward_state(u)

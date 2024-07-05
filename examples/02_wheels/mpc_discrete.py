@@ -26,14 +26,15 @@ q = numpy.array([   [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] ] )
     
-r = numpy.array( [ [10**-2, 0.0], [0.0, 10**-2] ]) 
+r = numpy.array( [ [10**-3, 0.0], [0.0, 10**-3] ]) 
 
 
 a_disc, b_disc, c_disc = LibsControl.c2d(ds.a, ds.b, ds.c, dt)
 
-prediction_horizon = 128
+control_horizon    = 16
+prediction_horizon = 64
 #solve MPC controller
-mpc = LibsControl.MPC(a_disc, b_disc, q, r, prediction_horizon)
+mpc = LibsControl.MPC(a_disc, b_disc, q, r, control_horizon, prediction_horizon)
 
 
 print(mpc.phi.shape) 

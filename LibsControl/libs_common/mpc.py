@@ -33,7 +33,7 @@ class MPC:
 
         self.xr_aug = numpy.zeros((self.n_states*self.prediction_horizon, 1))
 
-    
+      
     def _matrix_augmentation(self, a, b, q, r, control_horizon, prediction_horizon):
       
         result_phi = numpy.zeros((self.n_states*prediction_horizon, self.n_states))        
@@ -54,7 +54,6 @@ class MPC:
         result_theta = numpy.zeros((self.n_states*prediction_horizon, self.n_inputs*prediction_horizon))
         for m in range(prediction_horizon):
             tmp = min(m + 1, control_horizon)
-            #r = m+1
             for n in range(tmp):
                 a_pow = m - n
 
@@ -89,7 +88,7 @@ class MPC:
 
         s  = self.xr_aug - self.phi@x - self.omega@u_prev
         du = self.sigma@s
-        u  = u_prev + du
+        u  = numpy.clip(u_prev + du, -self.antiwindup, self.antiwindup)
 
         return u
     
@@ -97,14 +96,17 @@ class MPC:
     def forward_trajectory(self, xr, x, u_prev):   
         #tile xr into xr_aug
 
+        '''
         for n in range(self.prediction_horizon):
             ofs = n*self.n_states
-            self.xr_aug[ofs:ofs + self.n_states, :] = xr[n].copy()
+            self.xr_aug[ofs:ofs + self.n_states, :] = xr[n, :]
+        '''
 
+        self.xr_aug = numpy.reshape(xr, (xr.shape[0]*xr.shape[1], 1))
 
         s  = self.xr_aug - self.phi@x - self.omega@u_prev
         du = self.sigma@s
-        u  = u_prev + du
+        u  = numpy.clip(u_prev + du, -self.antiwindup, self.antiwindup)
 
         return u
     

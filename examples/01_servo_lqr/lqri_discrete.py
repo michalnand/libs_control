@@ -5,6 +5,14 @@ import matplotlib.pyplot as plt
 import LibsControl
 
 
+def compute_jerk(x, dt):
+
+    v   = (x[1:, :] - x[0:-1, :])/dt
+    acc = (v[1:, :] - v[0:-1, :])/dt
+    jerk= (acc[1:, :] - acc[0:-1, :])/dt
+
+    return jerk
+
 dt = 0.001 
 
 # create dynamical system
@@ -40,7 +48,7 @@ print(ds)
 
 #create loss weighting matrices (diagonal)
 q = numpy.array([ [1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ] )
-r = numpy.array( [ [1000.0] ]) 
+r = numpy.array( [ [100.0] ]) 
 
 a_disc, b_disc, c_disc = LibsControl.c2d(ds.a, ds.b, ds.c, dt)
 
@@ -73,6 +81,7 @@ u = numpy.zeros((mat_b.shape[1], 1))
 
 #result log
 t_result = []
+du_result = []
 u_result = []
 x_result = []
 
@@ -86,23 +95,27 @@ for n in range(n_max):
     x = ds.x
 
     #compute controller output
-    u = lqr.forward(xr, x, u)
+    u, du = lqr.forward(xr, x, u)
     
     #compute plant output
     x, y = ds.forward_state(u)
   
     #add constant distrubance in middle
-    if n > n_max//2:
-        x[0]+= 0.1*numpy.pi/180.0
+    #if n > n_max//2:
+    #    x[0]+= 0.1*numpy.pi/180.0
 
     t_result.append(n*dt)
+    du_result.append(du[:, 0].copy())
     u_result.append(u[:, 0].copy())
     x_result.append(x[:, 0].copy())
     
     
 t_result = numpy.array(t_result)
-x_result = numpy.array(x_result)
+du_result = numpy.array(du_result)
 u_result = numpy.array(u_result)
+x_result = numpy.array(x_result)
+
+
 
 #convert radians to degrees
 x_result[:, 0]*= 180.0/numpy.pi
@@ -110,3 +123,8 @@ x_result[:, 1]*= 180.0/numpy.pi
 
 #plot results
 LibsControl.plot_closed_loop_response(t_result, u_result, x_result, x_hat = None, file_name = "lqri_discrete_output.png", u_labels = "voltage [V]", x_labels = ["position [deg]", "velocity [deg/s]", "current [A]"])
+
+
+
+jerk_result = compute_jerk(x_result, dt)
+print("total jerk = ", numpy.abs(jerk_result[:, 0]).sum())

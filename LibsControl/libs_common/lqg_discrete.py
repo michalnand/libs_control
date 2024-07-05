@@ -18,7 +18,7 @@ R matrix, shape (n_inputs, n_inputs)
 ''' 
 class LQGDiscrete:
 
-    def __init__(self, a, b, c, q, r, noise_q, noise_r, antiwindup = 10**10):
+    def __init__(self, a, b, c, q, r, noise_q, noise_r, antiwindup = 10**10, di_max=10**10):
         self.k, self.ki = self.solve_lqr(a, b, c, q, r)
         self.f = self.solve_kalman_gain(a, c, noise_q, noise_r)
 
@@ -27,6 +27,7 @@ class LQGDiscrete:
         self.c = c
 
         self.antiwindup = antiwindup
+        self.di_max     = di_max
 
     '''
     inputs:
@@ -44,7 +45,13 @@ class LQGDiscrete:
       
         # integral action   
         error = yr - y
-        integral_action_new = integral_action + self.ki@error
+
+        dintegral_action    = self.ki@error
+
+        #kick clipping
+        dintegral_action    = numpy.clip(dintegral_action, -self.di_max , self.di_max)
+        integral_action_new = integral_action + dintegral_action
+
 
         # LQR controll law 
         u_new = -self.k@x_hat + integral_action_new
