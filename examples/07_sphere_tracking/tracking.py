@@ -6,7 +6,7 @@ import LibsControl
 
 dt = 1.0/100.0
 
-max_u = 0.1
+max_u = 10**2 #0.5
 
 mat_a = numpy.zeros((4, 4))
 mat_b = numpy.zeros((4, 2))
@@ -51,21 +51,22 @@ print("ki = ")
 print(lqr.ki)
 
 
-#create loss weighting matrices (diagonal)
-q = numpy.array([ [1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 0.0]] )
-r = numpy.array( [ [10**-4, 0.0], [0.0, 10**-4] ]) 
-
 #solve MPC controller
-control_horizon    = 4
+control_horizon    = 1
 prediction_horizon = 64
+q = numpy.array([ [1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 0.0]] )
+r = numpy.array( [ [10**-3, 0.0], [0.0, 10**-3] ]) 
+
 mpc = LibsControl.MPC(a_disc, b_disc, q, r, control_horizon, prediction_horizon, max_u)
+
+#mpc = LibsControl.MPPI(a_disc, b_disc, q, r, prediction_horizon, max_u)
 
 
 
 
 
 #process simulation
-path_length = 2000
+path_length = 500
 
 
 # create required trajectory - square motion pattern

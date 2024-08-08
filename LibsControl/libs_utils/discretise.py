@@ -9,6 +9,10 @@ def c2d(a, b, c, dt):
 
     a_disc  = tmp_a@tmp_b
     b_disc  = (tmp_a*dt)@b
-    c_disc  = c
+
+    if c is not None:
+        c_disc  = c
+    else:
+        c_disc = numpy.eye(a.shape[0])
 
     return a_disc, b_disc, c_disc

@@ -44,6 +44,7 @@ class LQRDiscrete:
 
         dintegral_action    = self.ki@error
 
+
         #kick clipping
         dintegral_action    = numpy.clip(dintegral_action, -self.di_max , self.di_max)
         integral_action_new = integral_action + dintegral_action
@@ -54,6 +55,7 @@ class LQRDiscrete:
         #conditional antiwindup
         u = numpy.clip(u_new, -self.antiwindup, self.antiwindup)
         integral_action_new = integral_action_new - (u_new - u)
+
 
         return u, integral_action_new
 

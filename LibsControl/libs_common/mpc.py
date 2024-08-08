@@ -53,7 +53,8 @@ class MPC:
 
         result_theta = numpy.zeros((self.n_states*prediction_horizon, self.n_inputs*prediction_horizon))
         for m in range(prediction_horizon):
-            tmp = min(m + 1, control_horizon)
+            #tmp = min(m + 1, control_horizon)
+            tmp = min(m, control_horizon)
             for n in range(tmp):
                 a_pow = m - n
 
@@ -84,24 +85,13 @@ class MPC:
         #tile xr into xr_aug
         for n in range(self.prediction_horizon):
             ofs = n*self.n_states
-            self.xr_aug[ofs:ofs + self.n_states, :] = xr.copy()
+            self.xr_aug[ofs:ofs + self.n_states, :] = xr[n, :]
 
-        s  = self.xr_aug - self.phi@x - self.omega@u_prev
-        du = self.sigma@s
-        u  = numpy.clip(u_prev + du, -self.antiwindup, self.antiwindup)
 
-        return u
+        return self.forward_trajectory(xr, x, u_prev)
     
 
     def forward_trajectory(self, xr, x, u_prev):   
-        #tile xr into xr_aug
-
-        '''
-        for n in range(self.prediction_horizon):
-            ofs = n*self.n_states
-            self.xr_aug[ofs:ofs + self.n_states, :] = xr[n, :]
-        '''
-
         self.xr_aug = numpy.reshape(xr, (xr.shape[0]*xr.shape[1], 1))
 
         s  = self.xr_aug - self.phi@x - self.omega@u_prev
@@ -110,37 +100,7 @@ class MPC:
 
         return u
     
-    def test(self):
-        
-        #matrices test
-        u_initial = numpy.random.randn(self.n_inputs, 1)
-        du        = numpy.random.randn(self.prediction_horizon, self.n_inputs, 1) 
-        x_initial = numpy.random.randn(self.n_states, 1)
-        
-        
-        x_result = []
-
-        u  = u_initial.copy()
-        x  = x_initial.copy()
-        for n in range(self.prediction_horizon):
-            u = u + du[n]
-            x = a@x + b@u
-            x_result.append(x)
-
-        x_result = numpy.array(x_result)
-
-
-        du_flat = du.reshape(self.prediction_horizon*self.n_inputs, 1)
-        x_pred = self.phi@x_initial + self.omega@u_initial + self.theta@du_flat
-        x_pred = x_pred.reshape(self.prediction_horizon, n_states, 1)
-
-
-        error = ((x_result - x_pred)**2).mean(axis=(1, 2))
-
-        print(error)
-
-        print("mean error = ", error.mean())
-        
+    
     
 
 if __name__ == "__main__":
@@ -153,7 +113,7 @@ if __name__ == "__main__":
     q = numpy.eye(n_states, n_states)
     r = numpy.eye(n_inputs, n_inputs)
 
-    mpc = MPC(a, b, q, r, 64)
+    mpc = MPC(a, b, q, r, 1, 64)
 
     
 
