@@ -2,12 +2,12 @@ import numpy
 
 
 '''
-dicrete PID controller : 
-u(n+1) = u(n) + k0e(n) + k1e(n-1) + k2e(n-2)
+    dicrete PID controller : 
+    u(n+1) = u(n) + k0e(n) + k1e(n-1) + k2e(n-2)
 ''' 
 class PID:
 
-    def __init__(self, kp, ki, kd, antiwindup = 10**10, di_max=10**10):
+    def __init__(self, kp, ki, kd, antiwindup = 10**10, du_max=10**10):
         self.k0 = kp + ki + kd
         self.k1 = -kp -2.0*kd
         self.k2 = kd
@@ -18,7 +18,7 @@ class PID:
         
         
         self.antiwindup = antiwindup
-        self.di_max     = di_max
+        self.du_max     = du_max
 
     '''
     inputs:
@@ -38,9 +38,9 @@ class PID:
         du = self.k0*self.e0 + self.k1*self.e1 + self.k2*self.e2
 
         #kick clipping, maximum output value change limitation
-        du  = numpy.clip(du, -self.di_max , self.di_max)
+        du  = numpy.clip(du, -self.du_max , self.du_max)
 
-        #entiwindup, maximum output value limitation
+        #antiwindup, maximum output value limitation
         u   = numpy.clip(u_prev + du,  -self.antiwindup, self.antiwindup)
 
         return u

@@ -43,19 +43,19 @@ class MPC:
 
         result_omega = numpy.zeros((self.n_states*prediction_horizon, self.n_inputs))        
         for n in range(prediction_horizon):
-            ofs = n*self.n_states    
 
             tmp = b.copy()
             for i in range(n):
                 tmp+= numpy.linalg.matrix_power(a, i+1)@b
 
+            ofs = n*self.n_states    
             result_omega[ofs:ofs + self.n_states, :] = tmp
 
+        '''
         result_theta = numpy.zeros((self.n_states*prediction_horizon, self.n_inputs*prediction_horizon))
         for m in range(prediction_horizon):
-            #tmp = min(m + 1, control_horizon)
-            tmp = min(m, control_horizon)
-            for n in range(tmp):
+            tmp_n = min(m, control_horizon)
+            for n in range(tmp_n): 
                 a_pow = m - n
 
                 ofs_m = m*self.n_states
@@ -66,7 +66,33 @@ class MPC:
                     tmp+= numpy.linalg.matrix_power(a, i+1)@b
 
                 result_theta[ofs_m:ofs_m + self.n_states, ofs_n:ofs_n + self.n_inputs] = tmp
-           
+        '''
+
+        '''
+        result_theta = numpy.zeros((self.n_states*prediction_horizon, self.n_inputs*prediction_horizon))
+        for n in range(prediction_horizon):
+
+            tmp = b.copy()
+            for i in range(n):
+                tmp+= numpy.linalg.matrix_power(a, i+1)@b
+
+            ofs = n*self.n_states    
+            result_theta[ofs:ofs + self.n_states, 0:self.n_inputs] = tmp
+        '''
+
+
+        result_theta = numpy.zeros((self.n_states*prediction_horizon, self.n_inputs*prediction_horizon))
+        for n in range(prediction_horizon):
+            for m in range(control_horizon):
+                tmp = b.copy()
+                for i in range(n):
+                    tmp+= numpy.linalg.matrix_power(a, i+1)@b
+
+                ofs_n = n*self.n_states   
+                ofs_m = m*self.n_inputs 
+                result_theta[ofs_n:ofs_n + self.n_states, ofs_m:ofs_m + self.n_inputs] = tmp
+
+
         result_q_aug = numpy.zeros((self.n_states*prediction_horizon, self.n_states*prediction_horizon))
         for n in range(prediction_horizon):
             ofs = n*self.n_states

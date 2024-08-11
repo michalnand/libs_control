@@ -6,7 +6,7 @@ import LibsControl
 
 dt = 1.0/100.0
 
-max_u = 10**2 #0.5
+max_u = 0.5
 
 mat_a = numpy.zeros((4, 4))
 mat_b = numpy.zeros((4, 2))
@@ -52,7 +52,7 @@ print(lqr.ki)
 
 
 #solve MPC controller
-control_horizon    = 1
+control_horizon    = 8
 prediction_horizon = 64
 q = numpy.array([ [1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 0.0]] )
 r = numpy.array( [ [10**-3, 0.0], [0.0, 10**-3] ]) 
