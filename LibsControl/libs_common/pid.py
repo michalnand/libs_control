@@ -1,8 +1,34 @@
 import numpy
 
+class PIDTextbook:
+
+    def __init__(self, kp, ki, kd):
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+
+        self.err_sum  = 0.0
+        self.err_now  = 0.0
+        self.err_prev = 0.0 
+    
+
+    def forward(self, xr, x):
+        self.err_prev= self.err_now
+        self.err_now = xr - x
+
+        self.err_sum+= self.err_now
+
+        result = self.kp*self.err_now
+        result+= self.ki*self.err_sum
+        result+= self.kd*(self.err_now - self.err_prev)
+
+        return result
+
+
+
 
 '''
-    dicrete PID controller : 
+    discrete PID controller : 
     u(n+1) = u(n) + k0e(n) + k1e(n-1) + k2e(n-2)
 ''' 
 class PID:

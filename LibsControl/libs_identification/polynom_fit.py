@@ -1,9 +1,9 @@
-from .sparse_solver     import *
+#from .sparse_solver     import *
 from .non_linear_lib    import *
 
 def polynom_fit(y, x, max_order):
 
-    solver = SparseSolver()
+    #solver = SparseSolver()
 
     x_aug = polynome_augmentation(x, max_order)
 
