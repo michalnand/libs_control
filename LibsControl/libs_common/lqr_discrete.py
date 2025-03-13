@@ -28,6 +28,7 @@ class LQRDiscrete:
         self.di_max     = di_max
 
 
+
     '''
     inputs:
         xr : required state, shape (n_states, 1)
@@ -38,7 +39,7 @@ class LQRDiscrete:
         u : input into plant, shape (n_inputs, 1)
         integral_action_new : new IA, shape (n_inputs, 1)
     '''
-    def forward(self, xr, x, integral_action):
+    def forward(self, xr, x, integral_action, contrains_func = None):
         #integral action
         error = xr - x
 
@@ -52,8 +53,13 @@ class LQRDiscrete:
         #LQR controll law
         u_new = -self.k@x + integral_action
 
-        #conditional antiwindup
-        u = numpy.clip(u_new, -self.antiwindup, self.antiwindup)
+        
+        if contrains_func is not None:
+            u = contrains_func(u_new)
+        else:
+            #conditional antiwindup
+            u = numpy.clip(u_new, -self.antiwindup, self.antiwindup)
+
         integral_action_new = integral_action_new - (u_new - u)
 
 

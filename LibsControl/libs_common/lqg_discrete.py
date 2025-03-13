@@ -105,7 +105,8 @@ class LQGDiscrete:
         p = scipy.linalg.solve_discrete_are(a_aug, b_aug, q_aug, r)
 
         # compute the LQR gain
-        ki_tmp =  numpy.linalg.inv(r)@(b_aug.T@p)
+        #ki_tmp =  numpy.linalg.inv(r)@(b_aug.T@p)
+        ki_tmp = numpy.linalg.inv(r + b_aug.T @ p @ b_aug) @ (b_aug.T @ p @ a_aug)
 
         #truncated small elements
         ki_tmp[numpy.abs(ki_tmp) < 10**-10] = 0
@@ -116,7 +117,7 @@ class LQGDiscrete:
 
         return k, ki
     
-
+    
     '''
     compute kalman gain matrix F for observer : 
     x_hat(n+1) = Ax_hat(n) + Bu(n) + F(y(n) - Cx_hat(n))

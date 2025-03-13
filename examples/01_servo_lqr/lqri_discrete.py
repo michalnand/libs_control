@@ -13,6 +13,9 @@ def compute_jerk(x, dt):
 
     return jerk
 
+
+
+
 dt = 0.001 
 
 # create dynamical system
@@ -48,7 +51,7 @@ print(ds)
 
 #create loss weighting matrices (diagonal)
 q = numpy.array([ [1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ] )
-r = numpy.array( [ [100.0] ]) 
+r = numpy.array( [ [10**2] ]) 
 
 a_disc, b_disc, c_disc = LibsControl.c2d(ds.a, ds.b, ds.c, dt)
 
@@ -61,9 +64,7 @@ print("\n\n")
 #solve LQR controller
 lqr = LibsControl.LQRIDiscrete(a_disc, b_disc, q, r)
 
-
 print("k  = ", lqr.k)
-print("ki = ", lqr.ki)
 
 
  
@@ -89,13 +90,15 @@ x_result = []
 #initial motor state
 ds.reset()
 
+ds.x = numpy.random.rand(3, 1)
+
 for n in range(n_max):
 
     #plant state
     x = ds.x
 
     #compute controller output
-    u, du = lqr.forward(xr, x, u)
+    u = lqr.forward(xr, x, u)
     
     #compute plant output
     x, y = ds.forward_state(u)
@@ -105,13 +108,11 @@ for n in range(n_max):
     #    x[0]+= 0.1*numpy.pi/180.0
 
     t_result.append(n*dt)
-    du_result.append(du[:, 0].copy())
     u_result.append(u[:, 0].copy())
     x_result.append(x[:, 0].copy())
     
     
 t_result = numpy.array(t_result)
-du_result = numpy.array(du_result)
 u_result = numpy.array(u_result)
 x_result = numpy.array(x_result)
 

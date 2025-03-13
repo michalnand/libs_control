@@ -93,3 +93,24 @@ class DynamicalSystem:
         y  = self.c@x
 
         return dx, y
+    
+
+    # finds minimum and maximum system time constant
+    def find_min_max_tau(self):        
+        poles = numpy.linalg.eigvals(self.a)
+
+        tau_min = 10**10
+        tau_max = 0
+
+        for p in poles:
+            tmp = abs(p.real)
+            if tmp > 10**-10:
+                tau = 1.0/tmp
+                
+                if tau > tau_max:
+                    tau_max = tau
+
+                if tau < tau_min:
+                    tau_min = tau
+
+        return tau_min, tau_max

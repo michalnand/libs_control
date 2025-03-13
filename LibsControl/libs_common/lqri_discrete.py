@@ -8,18 +8,28 @@ x(n+1) = Ax(n) + Bu(n)
 
 Q, R are weight matrices in quadratic loss
 
+R delta is matrix penalting u change
+
 A matrix, shape (n_states, n_states)
 B matrix, shape (n_states, n_inputs)
 
-Q matrix, shape (n_states, n_states)
-R matrix, shape (n_inputs, n_inputs)
-''' 
+Q           matrix, shape (n_states, n_states)
+R           matrix, shape (n_inputs, n_inputs)
+
+control law : 
+e(n)    = x(n) - xr(n)
+z(n)    = [e(n), u(n)]
+du(n)   = -K*z(n)
+u(n+1)  = u(n) + du(n)
+'''  
 class LQRIDiscrete:
 
     def __init__(self, a, b, q, r, antiwindup = 10**10):
-        self.ki, self.k = self.solve(a, b, q, r)
+        self.k = self.solve(a, b, q, r)
 
         self.antiwindup = antiwindup
+
+        self.v = numpy.zeros((a.shape[1], 1))
 
 
     '''
@@ -29,20 +39,29 @@ class LQRIDiscrete:
         integral_action : storage for integral action, shape (n_inputs, 1)
 
     returns:
-        u : input into plant, shape (n_inputs, 1)
-        integral_action_new : new IA, shape (n_inputs, 1)
+        u_curr : input into plant, shape (n_inputs, 1)
     '''
-    def forward(self, xr, x, u_prev):
-        
-        error = xr - x
+    def forward(self, xr, x, u_curr):
 
-        du = self.k@error - self.ki@u_prev
-        u  = u_prev + du
+        # Compute tracking error
+        #error = x - xr  # (n x 1)
 
-        #conditional antiwindup
-        u = numpy.clip(u, -self.antiwindup, self.antiwindup)
+        error = xr - x  # (n x 1)
         
-        return u, du
+        # Form the augmented state [error; previous control]
+        z = numpy.vstack([error, u_curr])  # (n+m x 1)
+        
+        # Compute control increment (delta u)
+        du = self.k @ z   # (m x 1)
+        
+        # Update stored control
+        u_resp = u_curr + du
+        
+        # Apply anti-windup clipping if desired
+        u_resp = numpy.clip(u_resp, -self.antiwindup, self.antiwindup)
+
+        return u_resp
+
 
 
     '''
@@ -51,48 +70,38 @@ class LQRIDiscrete:
     cost = sum x[n].T*Q*x[n] + u[n].T*R*u[n]
     '''
     def solve(self, a, b, q, r):
+    
+        n = a.shape[0]   # state dimension
+        m = b.shape[1]   # input dimension
 
-        n = a.shape[0]  #system order
-        m = b.shape[1]  #inputs count
+        # Correct augmented system: note the top-right block is B, not zeros.
+        a_aug = numpy.block([
+            [a, b],
+            [numpy.zeros((m, n)), numpy.eye(m)]
+        ])
 
-        #matrix augmentation with integral action
-        a_aug = numpy.zeros((m+n, m+n))
-        b_aug = numpy.zeros((m+n, m))
-        q_aug = numpy.zeros((m+n, m+n))
+        print(a_aug)
 
-        #add integrator into augmented A matrix
-        for i in range(m):
-            a_aug[i, i] = 1.0
+        b_aug = numpy.block([
+            [numpy.zeros((n, m))],
+            [numpy.eye(m)],
+        ])
 
-        #place A matrix in
-        a_aug[m:, m:] = a
+        print(b_aug)
 
-        #place B matrix in
-        a_aug[m:, 0] = b[:, 0]
+        # Define the augmented cost weighting matrix.
+        # Here we penalize the error (using Q) and the control increment (using R).
+        # Optionally, you can add a light weight on u itself in the lower-right block.
+        q_aug = numpy.block([
+            [q,               numpy.zeros((n, m))],
+            [numpy.zeros((m, n)),  numpy.zeros((m, m))]
+        ])
 
-
-        #add integrator into augmented B matrix
-        for i in range(m):
-            b_aug[i, i] = 1.0
-           
-        #project Q matric to output, and fill augmented q matrix
-        q_aug[m:, m:] = q
-
-        # discrete-time algebraic Riccati equation solution
+        # Solve the discrete-time algebraic Riccati equation (DARE)
         p = scipy.linalg.solve_discrete_are(a_aug, b_aug, q_aug, r)
 
-        # compute the LQR gain
-        k_tmp = numpy.linalg.inv(r)@(b_aug.T@p)
+        # Compute the LQR gain for the augmented system
+        k = numpy.linalg.inv(r + b_aug.T @ p @ b_aug) @ (b_aug.T @ p @ a_aug)
 
-        #truncate small elements (due numerical errors)
-        #k[numpy.abs(k) < 10**-10] = 0
-
-     
-        #split ki for k and integral action part ki
-        ki  = k_tmp[:, 0:m]
-        k   = k_tmp[:, m:]
-
-        print(k_tmp)
-
-
-        return ki, k
+        return k
+        
