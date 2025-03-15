@@ -21,8 +21,8 @@ u(n)    = -K*x(n) + Ki*e_sum(n)
 '''  
 class LQRDiscrete:
 
-    def __init__(self, a, b, q, r, antiwindup = 10**10, di_max = 10**10):
-        self.k, self.ki = self.solve(a, b, q, r)
+    def __init__(self, a, b, q, r, q_fac, antiwindup = 10**10, di_max = 10**10):
+        self.k, self.ki = self.solve(a, b, q, r, q_fac)
 
         self.antiwindup = antiwindup
         self.di_max     = di_max
@@ -51,7 +51,8 @@ class LQRDiscrete:
         integral_action_new = integral_action + dintegral_action
 
         #LQR controll law
-        u_new = -self.k@x + integral_action
+        #u_new = -self.k@x + integral_action
+        u_new = self.k@error + integral_action
 
         
         if contrains_func is not None:
@@ -71,7 +72,7 @@ class LQRDiscrete:
     x(n+1) = A x(n) + B u(n)
     cost = sum x[n].T*Q*x[n] + u[n].T*R*u[n]
     '''
-    def solve(self, a, b, q, r):
+    def solve(self, a, b, q, r, q_fac):
 
         n = a.shape[0]  #system order
         m = b.shape[1]  #inputs count
@@ -93,7 +94,8 @@ class LQRDiscrete:
         b_aug[0:n,0:m]  = b
 
         #project Q matric to output, and fill augmented q matrix
-        q_aug[n:, n:] = q
+        q_aug[0:n,0:n] = q
+        q_aug[n:, n:]  = q*q_fac
 
         # discrete-time algebraic Riccati equation solution
         p = scipy.linalg.solve_discrete_are(a_aug, b_aug, q_aug, r)
