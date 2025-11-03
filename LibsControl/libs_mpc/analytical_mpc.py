@@ -1,144 +1,78 @@
 import numpy
-import scipy
 
-"""
-    gradient based model predictive control MPC
+class AnalyticalMPCDirect:
+    def __init__(self, A, B, Q, R, prediction_horizon=16, control_horizon=4, u_max=1e10):
+        """
+        A: (n_x, n_x)
+        B: (n_x, n_u)
+        Q: (n_x, n_x) (state cost)
+        R: (n_u, n_u) (input cost)
+        prediction_horizon: N (how many future states)
+        control_horizon: Nh (how many future inputs we optimize; typically <= N)
+        """
+        self.A = A
+        self.B = B
+        self.nx = A.shape[0]
+        self.nu = B.shape[1]
+        self.N = prediction_horizon
+        self.Nh = control_horizon
+        self.u_max = u_max
 
-    system to control :
-        x(n+1) = Ax(n) + Bu(n)
-        u(n+1) = u(n) + du(n)
+        # build Phi and Theta (Theta maps the **sequence of future inputs U** to future stacked states)
+        self.Phi, self.Theta = self._build_prediction_matrices(A, B, self.N, self.Nh)
 
-    constrains : 
-        u  = clip(u,  u_min, u_max)     : actuator saturation
-        du = clip(du, du_min, du_max)   : maximum change constrain - kick avoid
-"""
+        # build augmented Q and R   
+        self.Q_aug = numpy.kron(numpy.eye(self.N), Q)  # block-diagonal
+        self.R_aug = numpy.kron(numpy.eye(self.Nh), R)
 
-class AnalyticalMPC:
+        # Precompute solver matrices: H and Sigma = H^{-1} Theta^T Q_aug
+        H = self.Theta.T @ self.Q_aug @ self.Theta + self.R_aug
+        # use solve later for stability; but precompute factorization if desired
+        # here we compute Sigma by solving H Sigma^T = Theta^T Q_aug  (do via solve)
+        # Sigma has shape (n_u*Nh, n_x*N)
+        # Solve H @ Sigma = Theta.T @ Q_aug  --> Sigma = numpy.linalg.solve(H, Theta.T @ Q_aug)
+        self.Sigma = numpy.linalg.solve(H, self.Theta.T @ self.Q_aug)
+        self.Sigma0 = self.Sigma[:self.nu, :]   # Only first-control block
 
-    def __init__(self, mat_a, mat_b, mat_q, mat_r, prediction_horizon = 16, control_horizon = 4):
-        self.n_states = mat_a.shape[0]
-        self.n_inputs = mat_b.shape[1]  
+    def _build_prediction_matrices(self, A, B, N, Nh):
+        nx = A.shape[0]
+        nu = B.shape[1]
+        # Precompute A powers: A^0 ... A^N
+        A_pows = [numpy.eye(nx)]
+        for i in range(1, N + 1):
+            A_pows.append(A_pows[-1] @ A)
 
+        # Phi: (nx*N, nx) stacked [A; A^2; ...; A^N]
+        Phi = numpy.zeros((nx * N, nx))
+        for i in range(N):
+            Phi[i * nx:(i + 1) * nx, :] = A_pows[i + 1]  # A^(i+1)
 
-        self.phi, self.omega, theta, q_aug, r_aug = self._matrix_augmentation(mat_a, mat_b, mat_q, mat_r, control_horizon, prediction_horizon)
+        # Theta: (nx*N, nu*Nh) where block (i,j) is A^(i-j) B for i>=j, else 0
+        Theta = numpy.zeros((nx * N, nu * Nh))
+        for i in range(N):
+            for j in range(Nh):
+                if i >= j:
+                    # A^{i-j} B
+                    Theta[i * nx:(i + 1) * nx, j * nu:(j + 1) * nu] = A_pows[i - j] @ B
+                else:
+                    # remains zero
+                    pass
+        return Phi, Theta
 
-        h = (theta.T@q_aug@theta) + r_aug
-        sigma = numpy.linalg.inv(h)@theta.T@q_aug
+    def forward_traj(self, Xr, x):
+        """
+        Computes only the first control action u0.
+        """
+        x = numpy.atleast_2d(x).reshape(self.nx, 1)
+        Xr = numpy.atleast_2d(Xr).reshape(self.nx * self.N, 1)
 
-        #cut only part for u(n) (we dont care to compute future u(n+1...))
-        self.sigma = sigma[0:self.n_inputs, :]
+        # residual
+        s = Xr - self.Phi @ x
 
-        self.xr_aug = numpy.zeros((self.n_states*prediction_horizon, 1))
+        # compute only first control
+        u0 = self.Sigma0 @ s
+        u0 = numpy.clip(u0, -self.u_max, self.u_max)
 
+        print(self.Phi.shape, self.Sigma0.shape, s.shape, u0.shape)
 
-        self.u_min = -1.0
-        self.u_max =  1.0
-        self.du_min = -1.0
-        self.du_max = 1.0
-
-    def forward(self, xr, x, u_prev, contrains_func = None):   
-        self.xr_aug = numpy.reshape(xr, (xr.shape[0]*xr.shape[1], 1))
-
-        s  = self.xr_aug - self.phi@x - self.omega@u_prev
-        du = self.sigma@s
-        du = numpy.clip(du, self.du_min, self.du_max)
-
-        if contrains_func is not None:
-            u  = contrains_func(u_prev + du)
-        else:
-            u  = numpy.clip(u_prev + du, self.u_min, self.u_max)
-
-        return u
-    
-
-    '''
-    def _matrix_augmentation(self, a, b, q, r, control_horizon, prediction_horizon):
-      
-        result_phi = numpy.zeros((self.n_states*prediction_horizon, self.n_states))        
-        for n in range(prediction_horizon):
-            ofs = n*self.n_states
-            result_phi[ofs:ofs + self.n_states, :] = numpy.linalg.matrix_power(a, n+1)
-
-        result_omega = numpy.zeros((self.n_states*prediction_horizon, self.n_inputs))        
-        for n in range(prediction_horizon):
-
-            tmp = b.copy()
-            for i in range(n):
-                tmp+= numpy.linalg.matrix_power(a, i+1)@b
-
-            ofs = n*self.n_states    
-            result_omega[ofs:ofs + self.n_states, :] = tmp
-
-
-
-        result_theta = numpy.zeros((self.n_states*prediction_horizon, self.n_inputs*prediction_horizon))
-        for n in range(prediction_horizon):
-            for m in range(control_horizon):
-                tmp = b.copy()
-                for i in range(n):
-                    tmp+= numpy.linalg.matrix_power(a, i+1)@b
-
-                ofs_n = n*self.n_states   
-                ofs_m = m*self.n_inputs 
-                result_theta[ofs_n:ofs_n + self.n_states, ofs_m:ofs_m + self.n_inputs] = tmp
-
-
-        result_q_aug = numpy.zeros((self.n_states*prediction_horizon, self.n_states*prediction_horizon))
-        for n in range(prediction_horizon):
-            ofs = n*self.n_states
-            result_q_aug[ofs:ofs+self.n_states, ofs:ofs+self.n_states] = q
-
-        
-        result_r_aug = numpy.zeros((self.n_inputs*prediction_horizon, self.n_inputs*prediction_horizon))
-        for n in range(prediction_horizon):
-            ofs = n*self.n_inputs
-            result_r_aug[ofs:ofs+self.n_inputs, ofs:ofs+self.n_inputs] = r
-   
-        return result_phi, result_omega, result_theta, result_q_aug, result_r_aug
-    '''
-
-
-    def _matrix_augmentation(self, a, b, q, r, control_horizon, prediction_horizon):
-        # Precompute powers of A to avoid recalculating
-        a_powers = [numpy.linalg.matrix_power(a, i+1) for i in range(prediction_horizon)]
-
-        # Construct result_phi matrix
-        result_phi = numpy.zeros((self.n_states * prediction_horizon, self.n_states))        
-        for n in range(prediction_horizon):
-            ofs = n * self.n_states
-            result_phi[ofs:ofs + self.n_states, :] = a_powers[n]
-
-        # Construct result_omega matrix
-        result_omega = numpy.zeros((self.n_states * prediction_horizon, self.n_inputs))        
-        for n in range(prediction_horizon):
-            tmp = numpy.zeros_like(b)
-            for i in range(n + 1):  # Cumulative effect up to n+1
-                tmp += a_powers[i] @ b
-            ofs = n * self.n_states    
-            result_omega[ofs:ofs + self.n_states, :] = tmp
-
-        # Construct result_theta matrix with control horizon limit
-        result_theta = numpy.zeros((self.n_states * prediction_horizon, self.n_inputs * control_horizon))
-        for n in range(prediction_horizon):
-            for m in range(min(control_horizon, n + 1)):
-                tmp = numpy.zeros_like(b)
-                for i in range(n - m):  # Only sum up to the appropriate horizon
-                    tmp += a_powers[i] @ b
-                ofs_n = n * self.n_states   
-                ofs_m = m * self.n_inputs 
-                result_theta[ofs_n:ofs_n + self.n_states, ofs_m:ofs_m + self.n_inputs] = tmp
-
-        # Construct augmented Q matrix
-        result_q_aug = numpy.zeros((self.n_states * prediction_horizon, self.n_states * prediction_horizon))
-        for n in range(prediction_horizon):
-            ofs = n * self.n_states
-            result_q_aug[ofs:ofs + self.n_states, ofs:ofs + self.n_states] = q
-
-        # Construct augmented R matrix
-        result_r_aug = numpy.zeros((self.n_inputs * control_horizon, self.n_inputs * control_horizon))
-        for n in range(control_horizon):
-            ofs = n * self.n_inputs
-            result_r_aug[ofs:ofs + self.n_inputs, ofs:ofs + self.n_inputs] = r
-
-        return result_phi, result_omega, result_theta, result_q_aug, result_r_aug
-        
+        return u0

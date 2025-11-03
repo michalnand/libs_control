@@ -1,12 +1,12 @@
 '''
-Euler solver, 1st order
+    Euler solver, 1st order
 '''
 def ODESolverEuler(forward_func, x, u, dt):
     dx, y  = forward_func(x, u)
     return x + dx*dt, y
 
 '''
-Runge-Kuta solver, 4th order
+    Runge-Kuta solver, 4th order
 '''
 def ODESolverRK4(forward_func, x, u, dt):
     k1, y1  = forward_func(x, u) 

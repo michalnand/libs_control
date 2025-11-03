@@ -132,34 +132,20 @@ def plot_poles_mesh(scale, poles, file_name):
    
 
 
-def plot_open_loop_response(t_result, x_result, file_name, labels = None):
-    plt.clf()
 
-    count = len(x_result[0])
-    fig, axs = plt.subplots(count, 1, figsize=(8, 2*count))
 
-    if count == 1:
-        axs = [axs]
-    
-    idx = 0
-    for i in range(len(x_result[0])):
-        
-        if labels is not None:
-            lbl = labels[i]
-        else:
-            lbl = "x[" + str(i) + "]"
 
-        axs[idx].plot(t_result, x_result[:, i], label=lbl, color="deepskyblue")
-        axs[idx].set_xlabel("time [s]")
-        axs[idx].set_ylabel(lbl)
-        axs[idx].grid()
+def plot_response(t_result, u_result, x_result, file_name = "output.png", u_labels = None, x_labels = None):
 
-        idx+= 1
-        
-    plt.tight_layout()
-    plt.savefig(file_name, dpi = 300)
+    if not isinstance(t_result, numpy.ndarray):
+        t_result = numpy.array(t_result)
 
-def plot_closed_loop_response(t_result, u_result, x_result, x_hat = None, file_name = "output.png", u_labels = None, x_labels = None):
+    if not isinstance(u_result, numpy.ndarray):
+        u_result = numpy.array(u_result)
+
+    if not isinstance(x_result, numpy.ndarray):
+        x_result = numpy.array(x_result)
+
     plt.clf()
 
     count = len(u_result[0]) + len(x_result[0])
@@ -174,7 +160,64 @@ def plot_closed_loop_response(t_result, u_result, x_result, x_hat = None, file_n
         else:
             lbl = "u[" + str(i) + "]"
 
-        axs[idx].plot(t_result, u_result[:, i], label=lbl, color="deepskyblue")
+        axs[idx].plot(t_result, u_result[:, i], label=lbl, color="blueviolet")
+        axs[idx].set_xlabel("time [s]")
+        axs[idx].set_ylabel(lbl)
+        axs[idx].grid()
+
+        idx+= 1
+
+    for i in range(len(x_result[0])):
+        
+        if x_labels is not None:
+            lbl = x_labels[i]
+        else:
+            lbl = "x[" + str(i) + "]"
+       
+        axs[idx].plot(t_result, x_result[:, i], label=lbl, color="deepskyblue", alpha=0.75)
+        
+        axs[idx].set_xlabel("time [s]")
+        axs[idx].set_ylabel(lbl)
+        axs[idx].grid()
+
+        idx+= 1
+        
+    plt.tight_layout()
+    plt.savefig(file_name, dpi = 300)
+
+
+
+
+def plot_cl_response(t_result, u_result, xr_result, x_result, file_name = "output.png", u_labels = None, x_labels = None):
+
+    if not isinstance(t_result, numpy.ndarray):
+        t_result = numpy.array(t_result)
+
+    if not isinstance(u_result, numpy.ndarray):
+        u_result = numpy.array(u_result)
+
+    if not isinstance(xr_result, numpy.ndarray):
+        xr_result = numpy.array(xr_result)
+
+    if not isinstance(x_result, numpy.ndarray):
+        x_result = numpy.array(x_result)
+
+    
+    plt.clf()
+
+    count = len(u_result[0]) + len(x_result[0])
+    fig, axs = plt.subplots(count, 1, figsize=(8, 2*count))
+    
+
+    idx = 0
+    for i in range(len(u_result[0])):
+        
+        if u_labels is not None:
+            lbl = u_labels[i]
+        else:
+            lbl = "u[" + str(i) + "]"
+
+        axs[idx].plot(t_result, u_result[:, i], label=lbl, color="blueviolet")
         axs[idx].set_xlabel("time [s]")
         axs[idx].set_ylabel(lbl)
         axs[idx].grid()
@@ -188,19 +231,11 @@ def plot_closed_loop_response(t_result, u_result, x_result, x_hat = None, file_n
         else:
             lbl = "x[" + str(i) + "]"
 
-        if x_hat is not None:
-
-            axs[idx].plot(t_result, x_hat[:, i], label= "estimated", color="purple", alpha=0.75)
-            axs[idx].plot(t_result, x_result[:, i], label= "measured", color="deepskyblue", alpha=0.75)
-
-        else:
-            axs[idx].plot(t_result, x_result[:, i], label=lbl, color="deepskyblue", alpha=0.75)
+        axs[idx].plot(t_result, xr_result[:, i], label=lbl, color="red", alpha=0.75)
+        axs[idx].plot(t_result, x_result[:, i], label=lbl, color="deepskyblue", alpha=0.75)
         
         axs[idx].set_xlabel("time [s]")
         axs[idx].set_ylabel(lbl)
-
-        if x_hat is not None: 
-            axs[idx].legend()
         axs[idx].grid()
 
         idx+= 1
