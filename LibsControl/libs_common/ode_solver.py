@@ -28,3 +28,9 @@ def ODESolverRK4(forward_func, x, u, dt):
 
 
 
+def forward_func(x, u):
+    dx = A@x + B@u
+    y  = C@x
+
+    return dx, y
+

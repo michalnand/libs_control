@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     q = numpy.diag([1.0, 1.0, 0.0, 0.0])
     r = numpy.diag([1.0, 1.0])  
-    qi = 1.0   
+    qi = 100.0   
 
     controller = LibsControl.LQRIDiscrete(a_disc, b_disc, q, r, qi, 10.0)
 
@@ -91,9 +91,14 @@ if __name__ == "__main__":
         xr_result.append(xr[:, 0])
         x_result.append(x[:, 0])
 
+    t_result = numpy.array(t_result)
+    u_result = numpy.array(u_result)
+    xr_result = numpy.array(xr_result)
+    x_result = numpy.array(x_result)
 
     LibsControl.plot_cl_response(t_result, u_result, xr_result, x_result, "plots/lqr_result.png",  ["input X", "input Y"],  ["position X", "position Y", "velocity X", "velocity Y"])
-    
+    LibsControl.plot_cl_response(t_result, u_result[:, [1]], xr_result[:, [1, 3]], x_result[:, [1, 3]], "plots/lqr_result_x.png",  [ "input X"],  [ "position X",  "velocity X"])
+
 
     ds.reset()
 

@@ -1,6 +1,6 @@
 import numpy
 
-class AnalyticalMPCDirect:
+class MPCFGM:
     """
     A: (n_x, n_x)
     B: (n_x, n_u)
@@ -26,16 +26,19 @@ class AnalyticalMPCDirect:
         self.Q_aug = numpy.kron(numpy.eye(self.Hp), Q)
         self.R_aug = numpy.kron(numpy.eye(self.Hc), R)
 
-        # Precompute solver matrices: G and Sigma
-        G = self.Theta.T @ self.Q_aug @ self.Theta + self.R_aug
+        # 3, quadratic cost matrices
+        self.H = self.Theta.T @ self.Q_aug @ self.Theta + self.R_aug
+
         
-        # use solve later for stability; but precompute factorization if desired
-        # here we compute Sigma by solving G Sigma^T = Theta^T Q_aug  (do via solve)
-        # Sigma has shape (n_u*Hc, n_x*Hp)
-        # Solve H @ Sigma = Theta.T @ Q_aug
-        # Sigma = numpy.linalg.solve(H, Theta.T @ Q_aug)
-        self.Sigma  = numpy.linalg.solve(G, self.Theta.T @ self.Q_aug)
-        self.Sigma0 = self.Sigma[:self.nu, :]
+
+        # 4, Precompute Lipschitz constant for gradient: L = 2 λ_max(H)
+        self.L = 2 * self._estimate_lmax(self.H)
+        self.alpha = 1.0 / self.L    # Nesterov step size
+
+        print(self.H)
+        print(self.L)
+
+
 
     def _build_prediction_matrices(self, A, B, Hp, Hc):
         nx = A.shape[0]
@@ -62,13 +65,61 @@ class AnalyticalMPCDirect:
                     pass
 
         return Phi, Theta
+    
+    
+    def _estimate_lmax(self, M, iters=32):
+        n = M.shape[0]
+        x = numpy.random.randn(n)
+        x /= numpy.linalg.norm(x)
 
-    def forward_traj(self, Xr, x):
-        # residual
+        for _ in range(iters):
+            x = M @ x
+            nrm = numpy.linalg.norm(x)
+            if nrm < 1e-12:
+                break
+            x /= nrm    
+
+        return float(x @ (M @ x))
+    
+    def forward_traj(self, Xr, x, iters=8):
+
+        # e = reference error in predicted state space
         e = Xr - self.Phi @ x
 
-        # compute only first control
-        u0 = self.Sigma0 @ e
-        u0 = numpy.clip(u0, -self.u_max, self.u_max)
+        # h = Theta Q_aug e   (linear term of QP cost)
+        h = self.Theta.T @ (self.Q_aug @ e)
 
-        return u0
+        nU = self.nu * self.Hc
+
+        # initialisatiom
+        U = numpy.zeros(nU)
+        Y = numpy.zeros(nU)
+        t = 1.0 
+
+        # fast gradient method
+        for _ in range(iters):
+
+            # gradient = 2 (H Y - h)
+            g = 2 * (self.H @ Y - h)
+
+            # gradient step + box projection
+            U_new = Y - self.alpha * g
+            U_new = numpy.clip(U_new, -self.u_max, self.u_max)
+
+            # Nesterov update
+            t_new = 0.5 * (1 + numpy.sqrt(1 + 4*t*t))
+            beta  = (t - 1) / t_new
+            Y = U_new + beta * (U_new - U)
+
+            U = U_new
+            t = t_new
+        
+        # only first control action
+        u = U[:self.nu, 0]
+        u = numpy.expand_dims(u, 1)
+        
+        return u
+        
+
+
+   

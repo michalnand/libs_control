@@ -77,8 +77,11 @@ class DynamicalSystem:
 
     
     #state-less forward func
-    def forward(self, x, u):
-        x_new, y = ODESolverRK4(self._step, x, u, self.dt)
+    def forward(self, x, u, rk_solver = True):
+        if rk_solver:
+            x_new, y = ODESolverRK4(self._step, x, u, self.dt)
+        else:
+            x_new, y = ODESolverEuler(self._step, x, u, self.dt)
 
         return x_new, y
     

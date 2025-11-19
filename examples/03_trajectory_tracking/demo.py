@@ -49,20 +49,6 @@ def get_required(n, n_steps, prediction_horizon, n_states):
         x_pos_req = ((1664525*turn_state + 1013904223)%100)/100.0
         y_pos_req = ((22695477*turn_state + 1)%100)/100.0
 
-        '''
-        if turn_state == 0:
-            x_pos_req = 1.0
-            y_pos_req = 0.0
-        elif turn_state == 1:
-            x_pos_req = 1.0
-            y_pos_req = 1.0
-        elif turn_state == 2:
-            x_pos_req = 0.0
-            y_pos_req = 1.0
-        else:
-            x_pos_req = 0.0
-            y_pos_req = 0.0
-        '''
 
         xr = numpy.zeros((n_states, 1))
 
@@ -78,17 +64,19 @@ def get_required(n, n_steps, prediction_horizon, n_states):
 
 if __name__ == "__main__":
     dt = 0.01
+    u_limit = 10
 
     # 1st order DC motor, some random params
 
     tau = 0.5
     k   = 0.3
 
-    # create dynamical system
+    # create continuous dynamical system
     ds_lqr = position_model.PositionModel(tau, k, dt)
     ds_mpc = position_model.PositionModel(tau, k, dt)
 
   
+    # controller design
 
     # discretise continuous system
     a_disc, b_disc, _ = LibsControl.c2d(ds_lqr.a, ds_lqr.b, None, dt)
@@ -98,7 +86,7 @@ if __name__ == "__main__":
     r = numpy.diag([1.0, 1.0])  
     qi = 1.0   
 
-    lqr_controller = LibsControl.LQRIDiscrete(a_disc, b_disc, q, r, qi, 10.0)
+    lqr_controller = LibsControl.LQRIDiscrete(a_disc, b_disc, q, r, qi, u_limit)
 
 
     # synthetise model predictive control
@@ -106,14 +94,11 @@ if __name__ == "__main__":
     r = numpy.diag([1.0, 1.0])  
 
     prediction_horizon = 64
-    control_horizon    = 32
-    mpc_controller = LibsControl.AnalyticalMPCDirect(a_disc, b_disc, q, r, prediction_horizon, control_horizon, 10)
-
-
+    control_horizon    = 4
+    mpc_controller = LibsControl.AnalyticalMPCDirect(a_disc, b_disc, q, r, prediction_horizon, control_horizon, u_limit)
 
 
     visualisation = visualisation.TrajectoryRenderer(history_length=100)
-
 
     
     n_steps   = 1000
@@ -136,7 +121,6 @@ if __name__ == "__main__":
 
         # process simulation step
         x_lqr, _ = ds_lqr.forward(x_lqr, u_lqr) 
-
 
         # MPC output
         u_mpc = mpc_controller.forward_traj(Xr, x_mpc)

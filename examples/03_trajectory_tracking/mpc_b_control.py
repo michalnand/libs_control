@@ -57,7 +57,7 @@ if __name__ == "__main__":
     # compute controller
     prediction_horizon = 64
     control_horizon    = 4
-    controller = LibsControl.AnalyticalMPCDirect(a_disc, b_disc, q, r, prediction_horizon, control_horizon, u_limit)
+    controller = LibsControl.MPCFGM(a_disc, b_disc, q, r, prediction_horizon, control_horizon, u_limit)
 
 
     # simulation steps
@@ -98,8 +98,8 @@ if __name__ == "__main__":
     x_result = numpy.array(x_result)
 
     # plot results
-    LibsControl.plot_cl_response(t_result, u_result, xr_result, x_result, "plots/mpc_result.png",  ["input X", "input Y"],  ["position X", "position Y", "velocity X", "velocity Y"])
-    LibsControl.plot_cl_response(t_result, u_result[:, [1]], xr_result[:, [1, 3]], x_result[:, [1, 3]], "plots/mpc_result_x.png",  [ "input X"],  [ "position X",  "velocity X"])
+    LibsControl.plot_cl_response(t_result, u_result, xr_result, x_result, "plots/mpc_fgm_result.png",  ["input X", "input Y"],  ["position X", "position Y", "velocity X", "velocity Y"])
+    LibsControl.plot_cl_response(t_result, u_result[:, [1]], xr_result[:, [1, 3]], x_result[:, [1, 3]], "plots/mpc_fgm_result_x.png",  [ "input X"],  [ "position X",  "velocity X"])
 
 
     ds.reset()
