@@ -82,6 +82,44 @@ class MPCFGM:
         return float(x @ (M @ x))
     
     def forward_traj(self, Xr, x, iters=8):
+        # e = Xr - Phi x   → (nx*Hp,1)
+        e = Xr - self.Phi @ x
+
+        # h = Theta^T (Q_aug e)   → (nU,1)
+        h = self.Theta.T @ (self.Q_aug @ e)
+
+        nU = self.nu * self.Hc
+
+        # column vectors
+        U = numpy.zeros((nU, 1))
+        Y = numpy.zeros((nU, 1))
+        t = 1.0
+
+        # Fast Gradient Method (Nesterov)
+        for _ in range(iters):
+
+            # gradient = 2 (H Y - h)   → always (nU,1)
+            g = 2.0 * (self.H @ Y - h)
+
+            # gradient step + projection
+            U_new = Y - self.alpha * g
+            U_new = numpy.clip(U_new, -self.u_max, self.u_max)
+
+            # Nesterov momentum update
+            t_new = 0.5 * (1 + numpy.sqrt(1 + 4*t*t))
+            beta  = (t - 1) / t_new
+            Y = U_new + beta * (U_new - U)
+
+            U = U_new
+            t = t_new
+
+        # first control block → (nu,1)
+        u = U[:self.nu]
+        return u
+
+
+    '''
+    def forward_traj(self, Xr, x, iters=8):
 
         # e = reference error in predicted state space
         e = Xr - self.Phi @ x
@@ -119,7 +157,5 @@ class MPCFGM:
         u = numpy.expand_dims(u, 1)
         
         return u
-        
-
-
+    '''
    
