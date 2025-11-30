@@ -30,9 +30,8 @@ if __name__ == "__main__":
 
     q = numpy.diag([1.0, 1.0, 0.0, 0.0])
     r = numpy.diag([1.0, 1.0])  
-    qi = 100.0   
 
-    controller = LibsControl.LQRIDiscrete(a_disc, b_disc, q, r, qi, 10.0)
+    controller = LibsControl.LQRIDiscrete(a_disc, b_disc, q, r, 10.0)
 
     print("k  = ", controller.k)
     print("ki = ", controller.ki)

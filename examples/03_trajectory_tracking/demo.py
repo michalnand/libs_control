@@ -84,9 +84,8 @@ if __name__ == "__main__":
     # synthetise LQR optimal control
     q = numpy.diag([1.0, 1.0, 0.0, 0.0])
     r = numpy.diag([1.0, 1.0])  
-    qi = 1.0   
 
-    lqr_controller = LibsControl.LQRIDiscrete(a_disc, b_disc, q, r, qi, u_limit)
+    lqr_controller = LibsControl.LQRIDiscrete(a_disc, b_disc, q, r, u_limit)
 
 
     # synthetise model predictive control

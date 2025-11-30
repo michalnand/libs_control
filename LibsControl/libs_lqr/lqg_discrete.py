@@ -75,7 +75,9 @@ class LQGDiscrete:
     cost = sum x[n].T*Q*x[n] + u[n].T*R*u[n]
     '''
     def solve_lqr(self, a, b, c, q, r):
-
+        print(q)
+        print(r)
+        
         n = a.shape[0]  #system order
         m = b.shape[1]  #inputs count
         k = c.shape[0]  #outputs count
