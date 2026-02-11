@@ -21,10 +21,11 @@ u(n)    = -K*x(n) + Ki*e_sum(n)
 '''  
 class LQRIDiscrete: 
 
-    def __init__(self, a, b, q, r, antiwindup = 10**10):
+    def __init__(self, a, b, q, r, antiwindup = 10**10, aw_enabled = True):
         self.k, self.ki = self.solve(a, b, q, r)
 
         self.antiwindup = antiwindup
+        self.aw_enabled = aw_enabled
 
 
     '''
@@ -49,8 +50,9 @@ class LQRIDiscrete:
         #conditional antiwindup
         u = numpy.clip(u_new, -self.antiwindup, self.antiwindup)
 
-        integral_action_new = integral_action_new - (u_new - u)
-
+        if self.aw_enabled:
+            integral_action_new = integral_action_new - (u_new - u)
+        
 
         return u, integral_action_new
 
